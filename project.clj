@@ -10,4 +10,4 @@
                  [overtone/at-at "1.1.1"]
                  [clj-time "0.4.4"]]
   :plugins [[lein-ring "0.8.2"]]
-  :ring {:handler flatland.turntable/handler})
+  :ring {:handler flatland.turntable.server/handler})

@@ -1,8 +1,5 @@
-(ns flatland.turntable
+(ns flatland.turntable.service
   (:require [compojure.core :refer [GET POST ANY defroutes routes]]
-            (ring.middleware [format-params :refer :all]
-                             [params :refer :all]
-                             [keyword-params :refer :all])
             [clj-time.core :refer [in-minutes now interval]]
             [overtone.at-at :refer [mk-pool every stop]]))
 
@@ -87,18 +84,12 @@
 
 (defroutes writers
   (POST "/add" [name query minutes]
-    (add-query name query minutes))
+    (add-query name query (Long. minutes)))
   (POST "/remove" [name]
     (remove-query name)))
 
 (defroutes readers
   (ANY "/get" [name]
-    (get-query name))
-  (GET "/list" []
+       {:body (get-query name)})
+  (ANY "/list" []
     (list-queries)))
-
-(def handler
-  (-> (routes readers writers)
-      (wrap-keyword-params)
-      (wrap-params)
-      (wrap-json-params)))
