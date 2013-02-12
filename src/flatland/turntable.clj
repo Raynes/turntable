@@ -82,7 +82,8 @@
 (defn get-query [name]
   (dissoc (@running name) :scheduled-fn))
 
-(defn list-queries [])
+(defn list-queries []
+  (keys @running))
 
 (defroutes writers
   (POST "/add" [name query minutes]
