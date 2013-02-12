@@ -73,7 +73,11 @@
                                               (query-fn name query)
                                               pool)}))))
 
-(defn remove-query [name])
+(defn remove-query
+  "Stop a scheduled query and remove its entry from @running."
+  [name]
+  (stop (get-in @running [name :scheduled-fn]))
+  (swap! running dissoc name))
 
 (defn get-query [name])
 
