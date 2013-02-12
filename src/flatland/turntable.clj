@@ -55,8 +55,8 @@
           stop (now)]
       (swap! running update-in [name] assoc
              :results results
-             :start start
-             :stop stop
+             :start (str start)
+             :stop (str stop)
              :elapsed (in-minutes (interval start stop))))))
 
 (defn add-query
