@@ -1,13 +1,11 @@
 # turntable
 
-A Clojure library designed to ... well, that part is up to you.
+A Clojure service for running SQL queries every n minutes.
 
 ## Usage
 
-FIXME
+Don't. It isn't usable yet.
 
 ## License
-
-Copyright © 2013 FIXME
 
 Distributed under the Eclipse Public License, the same as Clojure.
