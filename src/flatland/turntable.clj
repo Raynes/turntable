@@ -79,7 +79,8 @@
   (stop (get-in @running [name :scheduled-fn]))
   (swap! running dissoc name))
 
-(defn get-query [name])
+(defn get-query [name]
+  (dissoc (@running name) :scheduled-fn))
 
 (defn list-queries [])
 
