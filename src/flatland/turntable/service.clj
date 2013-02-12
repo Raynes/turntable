@@ -61,12 +61,12 @@
    one minute cooldown between scheduling queries to help prevent too much
    database load."
   [name query minutes]
-  (let [minutes (mins minutes)]
-    (when (await-cooldown minutes)
+  (let [ms (mins minutes)]
+    (when (await-cooldown ms)
       (swap! running
              assoc name {:query query
                          :minutes minutes
-                         :scheduled-fn (every minutes
+                         :scheduled-fn (every ms
                                               (query-fn name query)
                                               pool)}))))
 
