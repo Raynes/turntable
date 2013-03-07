@@ -90,4 +90,4 @@
    (ANY "/get" [name]
      {:body (get-query name)})
    (ANY "/list" []
-     (list-queries config))))
+     (list-queries))))
