@@ -1,5 +1,5 @@
 (ns flatland.turntable.server
-  (:require [flatland.turntable.service :refer [readers writers]]
+  (:require [flatland.turntable.service :refer [turntable-routes]]
             [compojure.handler :refer [api]]
             [compojure.core :refer [routes]]
             [compojure.route :refer [not-found]]
@@ -7,7 +7,7 @@
                              [format-response :refer :all])))
 
 (def handler
-  (-> (routes readers writers (not-found nil)) 
+  (-> (routes turntable-routes (not-found nil)) 
       (api)
       (wrap-json-params)
       (wrap-json-response)))
