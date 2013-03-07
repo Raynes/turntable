@@ -60,10 +60,10 @@
                :minutes minutes}
         scheduled (every (mins minutes)
                          (query-fn query)
-                         pool)] 
-    (persist-queries config (swap! running update-in [name] assoc
-                                   :query query
-                                   :scheduled-fn scheduled))))
+                         pool)]
+    (swap! running update-in [name] assoc
+           :query query
+           :scheduled-fn scheduled)))
 
 (defn remove-query
   "Stop a scheduled query and remove its entry from @running."
@@ -83,8 +83,8 @@
 
 (defn turntable-routes [config]
   (routes
-   (POST "/add" [name server db query minutes]
-     (add-query config name server db query (Long. minutes)))
+   (POST "/add" [name server db query minutes] 
+     (persist-queries config (add-query config name server db query (Long. minutes))))
    (POST "/remove" [name]
      (remove-query config name))
    (ANY "/get" [name]
