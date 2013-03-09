@@ -36,6 +36,16 @@
       (slurp)
       (read-string)))
 
+(defn prepare
+  "Prepare a query. Returns a map of :query and :n-args where query is the
+   prepared query and n-args is the number of arguments this query takes."
+  [con query]
+  (let [statement (sql/prepare-statement con query)]
+    {:query statement
+     :n-args (-> statement
+                 (.getParameterMetaData)
+                 (.getParameterCount))}))
+
 (defn query-fn
   "Returns a function that runs a query, records start and end time,
    and updates running with the results and times when finished."
