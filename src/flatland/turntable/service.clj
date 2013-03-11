@@ -1,8 +1,12 @@
 (ns flatland.turntable.service
   (:require [compojure.core :refer [GET POST ANY defroutes routes]]
+            [compojure.route :refer [not-found]]
+            [compojure.handler :refer [api]]
             [clj-time.core :refer [in-minutes now interval]]
             [overtone.at-at :refer [mk-pool every stop]]
-            [clojure.java.jdbc :as sql]))
+            [clojure.java.jdbc :as sql]
+            (ring.middleware [format-params :refer :all]
+                             [format-response :refer :all])))
 
 (def ^:const minute
   "One minute in millseconds."
@@ -92,12 +96,16 @@
     (add-query config name server db query minutes)))
 
 (defn turntable-routes [config]
-  (routes
-   (POST "/add" [name server db query minutes] 
-     (persist-queries config (add-query config name server db query (Long. minutes))))
-   (POST "/remove" [name]
-     (remove-query config name))
-   (ANY "/get" [name]
-     {:body (get-query name)})
-   (ANY "/list" []
-     (list-queries))))
+  (-> (routes
+       (POST "/add" [name server db query minutes] 
+         (persist-queries config (add-query config name server db query (Long. minutes))))
+       (POST "/remove" [name]
+         (remove-query config name))
+       (ANY "/get" [name]
+            {:body (get-query name)})
+       (ANY "/list" []
+            (list-queries))
+       (not-found nil))
+      (api)
+      (wrap-json-params)
+      (wrap-json-response)))
