@@ -40,6 +40,11 @@
       (slurp)
       (read-string)))
 
+(defn sql-date
+  "Get an SQL date for the current time."
+  []
+  (java.sql.Date. (System/currentTimeMillis)))
+
 (defn prepare
   "Prepare a query, count its args and then duplicate arg that many times for
    passing to the query. Returns a vector suitable for passing to with-query-results."
@@ -50,13 +55,18 @@
                                   (.getParameterCount))
                               arg))))
 
+(defn run-query [config query server db]
+  (sql/with-connection (get-in config [:servers server db])
+    (sql/with-query-results rows (prepare query (sql-date))
+      (into [] rows))))
+
 (defn query-fn
   "Returns a function that runs a query, records start and end time,
    and updates running with the results and times when finished."
-  [{:keys [query name]}]
+  [config {:keys [query name]} server db]
   (fn []
     (let [start (now)
-          results (println query)
+          results (run-query config query server db)
           stop (now)]
       (swap! running assoc-in [name :results]
              {:results results
@@ -73,7 +83,7 @@
                :db db
                :minutes minutes}
         scheduled (every (mins minutes)
-                         (query-fn query)
+                         (query-fn config query server db)
                          pool)]
     (swap! running update-in [name] assoc
            :query query
