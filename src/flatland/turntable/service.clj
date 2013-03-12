@@ -99,7 +99,9 @@
   (dissoc (@running name) :scheduled-fn))
 
 (defn list-queries []
-  (keys @running))
+  (into {}
+        (for [[k v] @running]
+          [k (dissoc v :scheduled-fn)])))
 
 (defn init-saved-queries [config]
   (doseq [[name {{:keys [server db query minutes]} :query}] (read-queries config)]
@@ -114,7 +116,7 @@
        (ANY "/get" [name]
             {:body (get-query name)})
        (ANY "/list" []
-            (list-queries))
+            {:body (list-queries)})
        (not-found nil))
       (api)
       (wrap-json-params)
