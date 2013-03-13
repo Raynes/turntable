@@ -104,7 +104,7 @@
 (defn list-queries []
   (into {}
         (for [[k v] @running]
-          [k (dissoc v :scheduled-fn)])))
+          [k (dissoc v :scheduled-fn :results)])))
 
 (defn init-saved-queries [config]
   (doseq [[name {{:keys [server db query minutes]} :query}] (read-queries config)]
