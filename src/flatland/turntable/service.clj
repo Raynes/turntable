@@ -6,8 +6,9 @@
             [overtone.at-at :refer [mk-pool every stop]]
             [clojure.java.jdbc :as sql]
             (ring.middleware [format-params :refer :all]
-                             [format-response :refer :all])))
+                             [format-response :refer :all])
             [me.raynes.fs :refer [exists?]]
+            [cheshire.core :as json]))
 
 (def ^:const minute
   "One minute in millseconds."
@@ -78,17 +79,18 @@
 (defn add-query
   "Add a query name to run at minutes intervals."
   [config name server db query minutes]
-  (let [query {:query query
-               :name name
-               :server server
-               :db db
-               :minutes minutes}
-        scheduled (every (mins minutes)
-                         (query-fn config query server db)
-                         pool)]
-    (swap! running update-in [name] assoc
-           :query query
-           :scheduled-fn scheduled)))
+  (when-not (contains? @running name)
+    (let [query {:query query
+                 :name name
+                 :server server
+                 :db db
+                 :minutes minutes}
+          scheduled (every (mins minutes)
+                           (query-fn config query server db)
+                           pool)]
+      (swap! running update-in [name] assoc
+             :query query
+             :scheduled-fn scheduled))))
 
 (defn remove-query
   "Stop a scheduled query and remove its entry from @running."
@@ -110,10 +112,16 @@
 
 (defn turntable-routes [config]
   (-> (routes
-       (POST "/add" [name server db query minutes] 
-         (persist-queries config (add-query config name server db query (Long. minutes))))
+       (POST "/add" [name server db query minutes]
+         (if-let [added (add-query config name server db query (Long. minutes))]
+           (do (persist-queries config added)
+               {:status 204})
+           {:status 409
+            :headers {"Content-Type" "application/json;charset=utf-8"}
+            :body (json/encode {:error "Query by this name already exists. Remove it first."})}))
        (POST "/remove" [name]
-         (remove-query config name))
+         (remove-query config name)
+         {:status 204})
        (ANY "/get" [name]
             {:body (get-query name)})
        (ANY "/list" []
