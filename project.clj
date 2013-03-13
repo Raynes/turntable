@@ -10,6 +10,7 @@
                  [overtone/at-at "1.1.1"]
                  [clj-time "0.4.4"]
                  [org.clojure/java.jdbc "0.2.3"]
-                 [postgresql/postgresql "8.4-702.jdbc4"]]
+                 [postgresql/postgresql "8.4-702.jdbc4"]
+                 [me.raynes/fs "1.4.0"]]
   :plugins [[lein-ring "0.8.2"]]
   :ring {:handler flatland.turntable.server/handler})

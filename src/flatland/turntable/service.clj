@@ -7,6 +7,7 @@
             [clojure.java.jdbc :as sql]
             (ring.middleware [format-params :refer :all]
                              [format-response :refer :all])))
+            [me.raynes.fs :refer [exists?]]
 
 (def ^:const minute
   "One minute in millseconds."
@@ -36,9 +37,9 @@
 (defn read-queries
   "Read all previously persisted queries."
   [config]
-  (-> (:query-file config)
-      (slurp)
-      (read-string)))
+  (let [f (:query-file config)]
+    (when (exists? f)
+      (read-string (slurp f)))))
 
 (defn sql-date
   "Get an SQL date for the current time."
