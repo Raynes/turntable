@@ -81,14 +81,14 @@
               :elapsed (in-secs (interval start stop))}))))
 
 (defn add-query
-  "Add a query name to run at seconds intervals."
-  [config name db query seconds]
+  "Add a query name to run at period intervals."
+  [config name db query period]
   (when-not (contains? @running name)
     (let [query {:query query
                  :name name
                  :db db
-                 :period seconds}
-          scheduled (every (secs seconds)
+                 :period period}
+          scheduled (every (secs period)
                            (query-fn config query db)
                            pool)]
       (swap! running update-in [name] assoc
@@ -110,13 +110,13 @@
           [k (dissoc v :scheduled-fn :results)])))
 
 (defn init-saved-queries [config]
-  (doseq [[name {{:keys [db query seconds]} :query}] (read-queries config)]
-    (add-query config name db query seconds)))
+  (doseq [[name {{:keys [db query period]} :query}] (read-queries config)]
+    (add-query config name db query period)))
 
 (defn turntable-routes [config]
   (-> (routes
-       (POST "/add" [name db query seconds]
-         (if-let [added (add-query config name db query (Long. seconds))]
+       (POST "/add" [name db query period]
+         (if-let [added (add-query config name db query (Long. period))]
            (do (persist-queries config added)
                {:status 204})
            {:status 409
