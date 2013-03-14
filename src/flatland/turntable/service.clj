@@ -2,7 +2,7 @@
   (:require [compojure.core :refer [GET POST ANY defroutes routes]]
             [compojure.route :refer [not-found]]
             [compojure.handler :refer [api]]
-            [clj-time.core :refer [in-minutes now interval]]
+            [clj-time.core :refer [in-secs now interval]]
             [overtone.at-at :refer [mk-pool every stop]]
             [clojure.java.jdbc :as sql]
             (ring.middleware [format-params :refer :all]
@@ -10,18 +10,18 @@
             [me.raynes.fs :refer [exists?]]
             [cheshire.core :as json]))
 
-(def ^:const minute
-  "One minute in millseconds."
-  60000)
+(def ^:const second
+  "One second in millseconds."
+  1000)
 
 (def pool
   "A thread pool for usage with at-at."
   (mk-pool))
 
-(defn mins
-  "Minutes to milliseconds."
-  [m]
-  (* m minute))
+(defn secs
+  "Seconds to milliseconds."
+  [s]
+  (* s second))
 
 (def running
   "Queries that are currently running. It is a hash of the names associated
@@ -74,18 +74,18 @@
              {:results results
               :start (str start)
               :stop (str stop)
-              :elapsed (in-minutes (interval start stop))}))))
+              :elapsed (in-secs (interval start stop))}))))
 
 (defn add-query
-  "Add a query name to run at minutes intervals."
-  [config name server db query minutes]
+  "Add a query name to run at seconds intervals."
+  [config name server db query seconds]
   (when-not (contains? @running name)
     (let [query {:query query
                  :name name
                  :server server
                  :db db
-                 :minutes minutes}
-          scheduled (every (mins minutes)
+                 :period seconds}
+          scheduled (every (secs seconds)
                            (query-fn config query server db)
                            pool)]
       (swap! running update-in [name] assoc
@@ -107,13 +107,13 @@
           [k (dissoc v :scheduled-fn :results)])))
 
 (defn init-saved-queries [config]
-  (doseq [[name {{:keys [server db query minutes]} :query}] (read-queries config)]
-    (add-query config name server db query minutes)))
+  (doseq [[name {{:keys [server db query seconds]} :query}] (read-queries config)]
+    (add-query config name server db query seconds)))
 
 (defn turntable-routes [config]
   (-> (routes
-       (POST "/add" [name server db query minutes]
-         (if-let [added (add-query config name server db query (Long. minutes))]
+       (POST "/add" [name server db query seconds]
+         (if-let [added (add-query config name server db query (Long. seconds))]
            (do (persist-queries config added)
                {:status 204})
            {:status 409
