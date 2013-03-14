@@ -1,4 +1,5 @@
 (ns flatland.turntable.service
+  (:refer-clojure :excludes [second])
   (:require [compojure.core :refer [GET POST ANY defroutes routes]]
             [compojure.route :refer [not-found]]
             [compojure.handler :refer [api]]
@@ -57,18 +58,21 @@
                                   (.getParameterCount))
                               arg))))
 
-(defn run-query [config query server db]
-  (sql/with-connection (get-in config [:servers server db])
-    (sql/with-query-results rows (prepare query (sql-date))
-      (into [] rows))))
+(defn run-query [config query db]
+  (let [config (get-in config [:servers db])]
+    (sql/with-connection (if (contains? config :subname)
+                           config
+                           (assoc config :subname (str "//" db)))
+      (sql/with-query-results rows (prepare query (sql-date))
+        (into [] rows)))))
 
 (defn query-fn
   "Returns a function that runs a query, records start and end time,
    and updates running with the results and times when finished."
-  [config {:keys [query name]} server db]
+  [config {:keys [query name]} db]
   (fn []
     (let [start (now)
-          results (run-query config query server db)
+          results (run-query config query db)
           stop (now)]
       (swap! running assoc-in [name :results]
              {:results results
@@ -78,15 +82,14 @@
 
 (defn add-query
   "Add a query name to run at seconds intervals."
-  [config name server db query seconds]
+  [config name db query seconds]
   (when-not (contains? @running name)
     (let [query {:query query
                  :name name
-                 :server server
                  :db db
                  :period seconds}
           scheduled (every (secs seconds)
-                           (query-fn config query server db)
+                           (query-fn config query db)
                            pool)]
       (swap! running update-in [name] assoc
              :query query
@@ -107,13 +110,13 @@
           [k (dissoc v :scheduled-fn :results)])))
 
 (defn init-saved-queries [config]
-  (doseq [[name {{:keys [server db query seconds]} :query}] (read-queries config)]
-    (add-query config name server db query seconds)))
+  (doseq [[name {{:keys [db query seconds]} :query}] (read-queries config)]
+    (add-query config name db query seconds)))
 
 (defn turntable-routes [config]
   (-> (routes
-       (POST "/add" [name server db query seconds]
-         (if-let [added (add-query config name server db query (Long. seconds))]
+       (POST "/add" [name db query seconds]
+         (if-let [added (add-query config name db query (Long. seconds))]
            (do (persist-queries config added)
                {:status 204})
            {:status 409
