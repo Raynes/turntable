@@ -1,5 +1,5 @@
 (ns flatland.turntable.service
-  (:refer-clojure :excludes [second])
+  (:refer-clojure :exclude [second])
   (:require [compojure.core :refer [GET POST ANY defroutes routes]]
             [compojure.route :refer [not-found]]
             [compojure.handler :refer [api]]
