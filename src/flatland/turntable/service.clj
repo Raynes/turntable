@@ -74,7 +74,7 @@
     (let [start (now)
           results (run-query config query db)
           stop (now)]
-      (swap! running assoc-in [name :results]
+      (swap! running update-in [name :results] conj
              {:results results
               :start (str start)
               :stop (str stop)
