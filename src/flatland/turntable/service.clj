@@ -58,6 +58,16 @@
                                   (.getParameterCount))
                               arg))))
 
+(defn persist-results-to-atom
+  "Returns a function tresults to the @running atom."
+  [config query results]
+  (swap! running update-in [query :results] conj results)
+  results)
+
+(defn persist-results [config query results]
+  (doseq [f (:persist-fns config)]
+    (f config query results)))
+
 (defn run-query [config query db]
   (let [config (get-in config [:servers db])]
     (sql/with-connection (if (contains? config :subname)
@@ -74,11 +84,11 @@
     (let [start (now)
           results (run-query config query db)
           stop (now)]
-      (swap! running update-in [name :results] conj
-             {:results results
-              :start (str start)
-              :stop (str stop)
-              :elapsed (in-secs (interval start stop))}))))
+      (persist-results config name
+                       {:results results
+                        :start (str start)
+                        :stop (str stop)
+                        :elapsed (in-secs (interval start stop))}))))
 
 (defn add-query
   "Add a query name to run at period intervals."
