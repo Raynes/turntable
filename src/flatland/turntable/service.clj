@@ -3,7 +3,7 @@
   (:require [compojure.core :refer [GET POST ANY defroutes routes]]
             [compojure.route :refer [not-found]]
             [compojure.handler :refer [api]]
-            [clj-time.core :refer [in-secs now interval]]
+            [clj-time.core :refer [in-msecs now interval]]
             [overtone.at-at :refer [mk-pool every stop]]
             [clojure.java.jdbc :as sql]
             (ring.middleware [format-params :refer :all]
@@ -88,7 +88,7 @@
                        {:results results
                         :start (str start)
                         :stop (str stop)
-                        :elapsed (in-secs (interval start stop))}))))
+                        :elapsed (in-msecs (interval start stop))}))))
 
 (defn add-query
   "Add a query name to run at period intervals."
