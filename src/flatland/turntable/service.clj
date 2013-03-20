@@ -50,10 +50,6 @@
     (if (contains? config :subname)
       config
       (assoc config :subname (str "//" db)))))
-(defn sql-date
-  "Get an SQL date for the current time."
-  []
-  (java.sql.Date. (System/currentTimeMillis)))
 
 (defn prepare
   "Prepare a query, count its args and then duplicate arg that many times for
@@ -63,6 +59,34 @@
                             (.getParameterMetaData)
                             (.getParameterCount))
                         arg)))
+
+(defn table-exists?
+  "Check if a table exists."
+  [table]
+  (sql/with-query-results rows
+    ["select count(*) from information_schema.tables where table_name = ?" table]
+    (-> rows first :count pos?)))
+
+(defn create-results-table
+  "Create a results table for the query if one does not already exist.
+   If it does not exist, uses CREATE TABLE AS and then adds metadata keys
+   prefixed with underscores to the table for the other items."
+  [{:keys [sql name]}]
+  (when-not (table-exists? name)
+    (let [[prepared-sql args] (prepare (format "create table %s as %s" name sql) (sql-date))]
+      (sql/do-prepared prepared-sql args)
+      (sql/do-commands (format "truncate %s" name)
+                       (format "alter table %s
+                                  add column _start time,
+                                  add column _stop time,
+                                  add column _time time,
+                                  add column _elapsed integer"
+                               name)))))
+
+(defn sql-date
+  "Get an SQL date for the current time."
+  []
+  (java.sql.Date. (System/currentTimeMillis)))
 
 (defn persist-results-to-atom
   "Returns a function tresults to the @running atom."
