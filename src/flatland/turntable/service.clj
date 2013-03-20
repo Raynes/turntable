@@ -59,11 +59,10 @@
   "Prepare a query, count its args and then duplicate arg that many times for
    passing to the query. Returns a vector suitable for passing to with-query-results."
   [query arg]
-  (let [statement (sql/prepare-statement (sql/connection) query)]
-    (into [statement] (repeat (-> statement
-                                  (.getParameterMetaData)
-                                  (.getParameterCount))
-                              arg))))
+  (into [query] (repeat (-> (sql/prepare-statement (sql/connection) query)
+                            (.getParameterMetaData)
+                            (.getParameterCount))
+                        arg)))
 
 (defn persist-results-to-atom
   "Returns a function tresults to the @running atom."
