@@ -67,26 +67,26 @@
 
 (defn persist-results-to-atom
   "Returns a function tresults to the @running atom."
-  [config query results]
-  (swap! running update-in [query :results] conj results)
+  [config name results]
+  (swap! running update-in [name :results] conj results)
   results)
 
-(defn persist-results [config query results]
+(defn persist-results [config name results]
   (doseq [f (:persist-fns config)]
-    (f config query results)))
+    (f config name results)))
 
-(defn run-query [config query db]
+(defn run-query [config sql db]
   (sql/with-connection (get-db config db)
-    (sql/with-query-results rows (prepare query (sql-date))
+    (sql/with-query-results rows (prepare sql (sql-date))
       (into [] rows))))
 
 (defn query-fn
   "Returns a function that runs a query, records start and end time,
    and updates running with the results and times when finished."
-  [config {:keys [query name]} db]
+  [config {:keys [sql name]} db]
   (fn []
     (let [start (now)
-          results (run-query config query db)
+          results (run-query config sql db)
           stop (now)]
       (persist-results config name
                        {:results results
@@ -96,9 +96,9 @@
 
 (defn add-query
   "Add a query name to run at period intervals."
-  [config name db query period]
+  [config name db sql period]
   (when-not (contains? @running name)
-    (let [query {:query query
+    (let [query {:sql sql
                  :name name
                  :db db
                  :period period}
@@ -124,13 +124,13 @@
           [k (dissoc v :scheduled-fn :results)])))
 
 (defn init-saved-queries [config]
-  (doseq [[name {{:keys [db query period]} :query}] (read-queries config)]
-    (add-query config name db query period)))
+  (doseq [[name {{:keys [db sql period]} :query}] (read-queries config)]
+    (add-query config name db sql period)))
 
 (defn turntable-routes [config]
   (-> (routes
-       (POST "/add" [name db query period]
-         (if-let [added (add-query config name db query (Long. period))]
+       (POST "/add" [name db sql period]
+         (if-let [added (add-query config name db sql (Long. period))]
            (do (persist-queries config added)
                {:status 204})
            {:status 409
