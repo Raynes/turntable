@@ -43,6 +43,13 @@
     (when (exists? f)
       (read-string (slurp f)))))
 
+(defn get-db
+  "Given a config map and a database name, extract the db from the config."
+  [config db]
+  (let [config (get-in config [:servers db])]
+    (if (contains? config :subname)
+      config
+      (assoc config :subname (str "//" db)))))
 (defn sql-date
   "Get an SQL date for the current time."
   []
@@ -69,12 +76,9 @@
     (f config query results)))
 
 (defn run-query [config query db]
-  (let [config (get-in config [:servers db])]
-    (sql/with-connection (if (contains? config :subname)
-                           config
-                           (assoc config :subname (str "//" db)))
-      (sql/with-query-results rows (prepare query (sql-date))
-        (into [] rows)))))
+  (sql/with-connection (get-db config db)
+    (sql/with-query-results rows (prepare query (sql-date))
+      (into [] rows))))
 
 (defn query-fn
   "Returns a function that runs a query, records start and end time,
