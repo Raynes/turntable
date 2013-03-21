@@ -1,8 +1,9 @@
 (ns flatland.turntable.server
-  (:require [flatland.turntable.service :refer [turntable-routes init-saved-queries persist-results-to-atom]]))
+  (:require [flatland.turntable.service :refer [turntable-routes init-saved-queries persist-results-to-atom
+                                                persist-results-to-db]]))
 
 (def config (merge (read-string (slurp "sample.config.clj"))
-                   {:persist-fns [persist-results-to-atom]}))
+                   {:persist-fns [persist-results-to-atom persist-results-to-db]}))
 
 (init-saved-queries config)
 
