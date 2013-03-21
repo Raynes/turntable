@@ -67,6 +67,11 @@
     ["select count(*) from information_schema.tables where table_name = ?" table]
     (-> rows first :count pos?)))
 
+(defn sql-date
+  "Get an SQL date for the current time."
+  []
+  (java.sql.Date. (System/currentTimeMillis)))
+
 (defn create-results-table
   "Create a results table for the query if one does not already exist.
    If it does not exist, uses CREATE TABLE AS and then adds metadata keys
@@ -83,10 +88,6 @@
                                   add column _elapsed integer"
                                name)))))
 
-(defn sql-date
-  "Get an SQL date for the current time."
-  []
-  (java.sql.Date. (System/currentTimeMillis)))
 
 (defn persist-results-to-atom
   "Returns a function tresults to the @running atom."
