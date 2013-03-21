@@ -89,6 +89,18 @@
                                   add column _elapsed integer"
                                name)))))
 
+(defn persist-results-to-db
+  "Assumes a sql connection is already in place. Persists the results of the query
+   to a table named after the query. If the table doesn't already exist it creates it."
+  [config query results]
+  (create-results-table query)
+  (let [{:keys [results start stop time elapsed]} results]
+    (apply sql/insert-records (:name query)
+           (for [result results]
+             (merge result {"_start" (Time. (.getMillis start))
+                            "_stop" (Time. (.getMillis stop))
+                            "_time" time
+                            "_elapsed" elapsed})))))
 
 (defn persist-results-to-atom
   "Returns a function tresults to the @running atom."
