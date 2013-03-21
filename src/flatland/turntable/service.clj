@@ -9,7 +9,8 @@
             (ring.middleware [format-params :refer :all]
                              [format-response :refer :all])
             [me.raynes.fs :refer [exists?]]
-            [cheshire.core :as json]))
+            [cheshire.core :as json])
+  (:import (java.sql Time)))
 
 (def ^:const second
   "One second in millseconds."
@@ -67,10 +68,10 @@
     ["select count(*) from information_schema.tables where table_name = ?" table]
     (-> rows first :count pos?)))
 
-(defn sql-date
-  "Get an SQL date for the current time."
+(defn sql-time
+  "Get an SQL time for the current time."
   []
-  (java.sql.Date. (System/currentTimeMillis)))
+  (java.sql.Time. (System/currentTimeMillis)))
 
 (defn create-results-table
   "Create a results table for the query if one does not already exist.
@@ -78,7 +79,7 @@
    prefixed with underscores to the table for the other items."
   [{:keys [sql name]}]
   (when-not (table-exists? name)
-    (let [[prepared-sql args] (prepare (format "create table %s as %s" name sql) (sql-date))]
+    (let [[prepared-sql & args] (prepare (format "create table %s as %s" name sql) (sql-time))]
       (sql/do-prepared prepared-sql args)
       (sql/do-commands (format "truncate %s" name)
                        (format "alter table %s
@@ -117,6 +118,7 @@
                         :start (str start)
                         :stop (str stop)
                         :elapsed (in-msecs (interval start stop))}))))
+              time (sql-time)
 
 (defn add-query
   "Add a query name to run at period intervals."
