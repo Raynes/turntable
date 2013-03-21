@@ -92,33 +92,36 @@
 
 (defn persist-results-to-atom
   "Returns a function tresults to the @running atom."
-  [config name results]
-  (swap! running update-in [name :results] conj results)
+  [config query results]
+  (swap! running update-in [(:name query) :results] conj results)
   results)
 
-(defn persist-results [config name results]
+(defn persist-results [config query results]
   (doseq [f (:persist-fns config)]
-    (f config name results)))
+    (f config query results)))
 
-(defn run-query [config sql db]
-  (sql/with-connection (get-db config db)
-    (sql/with-query-results rows (prepare sql (sql-date))
-      (into [] rows))))
+(defn run-query [config sql time db]
+  (sql/with-query-results rows (prepare sql time)
+    (into [] rows)))
 
 (defn query-fn
   "Returns a function that runs a query, records start and end time,
    and updates running with the results and times when finished."
-  [config {:keys [sql name]} db]
+  [config {:keys [sql name] :as query} db]
   (fn []
-    (let [start (now)
-          results (run-query config sql db)
-          stop (now)]
-      (persist-results config name
-                       {:results results
-                        :start (str start)
-                        :stop (str stop)
-                        :elapsed (in-msecs (interval start stop))}))))
+    (try
+      (sql/with-connection (get-db config db)
+        (let [start (now)
               time (sql-time)
+              results (run-query config sql time db)
+              stop (now)]
+          (persist-results config query
+                           {:results results
+                            :start start
+                            :stop stop
+                            :time time
+                            :elapsed (in-msecs (interval start stop))})))
+      (catch Exception e (.printStackTrace e)))))
 
 (defn add-query
   "Add a query name to run at period intervals."
