@@ -4,26 +4,14 @@
             [compojure.route :refer [not-found]]
             [compojure.handler :refer [api]]
             [clj-time.core :refer [in-msecs now interval]]
-            [overtone.at-at :refer [mk-pool every stop]]
+            [schejulure.core :refer [schedule]]
             [clojure.java.jdbc :as sql]
             (ring.middleware [format-params :refer :all]
                              [format-response :refer :all])
             [me.raynes.fs :refer [exists?]]
-            [cheshire.core :as json])
+            [cheshire.core :as json]
+            [clojure.edn :as edn])
   (:import (java.sql Time)))
-
-(def ^:const second
-  "One second in millseconds."
-  1000)
-
-(def pool
-  "A thread pool for usage with at-at."
-  (mk-pool))
-
-(defn secs
-  "Seconds to milliseconds."
-  [s]
-  (* s second))
 
 (def running
   "Queries that are currently running. It is a hash of the names associated
@@ -143,9 +131,8 @@
                  :name name
                  :db db
                  :period period}
-          scheduled (every (secs period)
-                           (query-fn config query db)
-                           pool)]
+          scheduled (schedule (edn/read-string period)
+                              (query-fn config query db))]
       (swap! running update-in [name] assoc
              :query query
              :scheduled-fn scheduled))))
@@ -153,7 +140,7 @@
 (defn remove-query
   "Stop a scheduled query and remove its entry from @running."
   [config name]
-  (stop (get-in @running [name :scheduled-fn])) 
+  (future-cancel (get-in @running [name :scheduled-fn])) 
   (persist-queries config (swap! running dissoc name)))
 
 (defn get-query [name]
