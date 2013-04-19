@@ -42,7 +42,7 @@
 
 (defn prepare
   "Prepare a query, count its args and then duplicate arg that many times for
-   passing to the query. Returns a vector suitable for passing to with-query-results."
+  passing to the query. Returns a vector suitable for passing to with-query-results."
   [query arg]
   (into [query] (repeat (-> (sql/prepare-statement (sql/connection) query)
                             (.getParameterMetaData)
@@ -96,11 +96,15 @@
   (swap! running update-in [(:name query) :results] conj results)
   results)
 
-(defn persist-results [config query results]
+(defn persist-results
+  "Persist results with the functions in the config's :persist-fns."
+  [config query results]
   (doseq [f (:persist-fns config)]
     (f config query results)))
 
-(defn run-query [config sql time db]
+(defn run-query
+  "Run a query and return the results as a vector."
+  [config sql time db]
   (sql/with-query-results rows (prepare sql time)
     (into [] rows)))
 
@@ -124,7 +128,7 @@
       (catch Exception e (.printStackTrace e)))))
 
 (defn add-query
-  "Add a query name to run at period intervals."
+  "Add a query to run at scheduled times (via the cron-like map used by schejulure)."
   [config name db sql period]
   (when-not (contains? @running name)
     (let [query {:sql sql
