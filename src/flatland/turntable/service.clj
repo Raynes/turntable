@@ -59,7 +59,7 @@
 (defn sql-time
   "Get an SQL time for the current time."
   []
-  (java.sql.Time. (System/currentTimeMillis)))
+  (java.sql.Timestamp. (System/currentTimeMillis)))
 
 (defn create-results-table
   "Create a results table for the query if one does not already exist.
