@@ -104,7 +104,7 @@
 
 (defn run-query
   "Run a query and return the results as a vector."
-  [config sql time db]
+  [config sql time]
   (sql/with-query-results rows (prepare sql time)
     (into [] rows)))
 
@@ -117,7 +117,7 @@
       (sql/with-connection (get-db config db)
         (let [start (now)
               time (sql-time)
-              results (run-query config sql time db)
+              results (run-query config sql time)
               stop (now)]
           (persist-results config query
                            {:results results
