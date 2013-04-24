@@ -147,19 +147,27 @@
   (future-cancel (get-in @running [name :scheduled-fn])) 
   (persist-queries config (swap! running dissoc name)))
 
-(defn get-query [name]
+(defn get-query
+  "Fetch the currently running query."
+  [name]
   (dissoc (@running name) :scheduled-fn))
 
-(defn list-queries []
+(defn list-queries
+  "List all of the queries."
+  []
   (into {}
         (for [[k v] @running]
           [k (dissoc v :scheduled-fn :results)])))
 
-(defn init-saved-queries [config]
+(defn init-saved-queries
+  "Startup persisted queries."
+  [config]
   (doseq [[name {{:keys [db sql period]} :query}] (read-queries config)]
     (add-query config name db sql period)))
 
-(defn turntable-routes [config]
+(defn turntable-routes
+  "Return API routes for turntable."
+  [config]
   (-> (routes
        (POST "/add" [name db sql period]
          (if-let [added (add-query config name db sql (Long. period))]
