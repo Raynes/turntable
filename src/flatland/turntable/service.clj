@@ -201,7 +201,7 @@
         key-field (keyword field)]
     (sql/with-connection (get-db config (:db q))
       (sql/with-query-results rows
-        [(format "SELECT %s AS value, _time FROM %s WHERE _start >= ?::timestamp AND _start <= ?::timestamp"
+        [(format "SELECT %s AS value, _time FROM \"%s\" WHERE _start >= ?::timestamp AND _start <= ?::timestamp"
                  field
                  (:name q))
          (Timestamp. (to-ms from))
@@ -210,12 +210,14 @@
 
 (defn points [config targets from until]
   (let [queries (into {} (for [target targets]
-                                 (.split target "/" 2)))
+                                 (vec (.split target "/" 2))))
         query->target (into {} (for [[query field] queries]
                                  [query (str query "/" field)]))]
     (for [[target datapoints]
-          ,,(query/query-seqs (zipmap (keys queries) (repeat nil))
-                              {:payload :value :timestamp :_time
+          ,,(query/query-seqs (zipmap (for [q (keys queries)]
+                                        (str "&" q))
+                                      (repeat nil))
+                              {:payload :value :timestamp #(.getTime ^Date (:_time %))
                                :seq-generator (fn [query]
                                                 (fetch-data config
                                                             query (get queries query)
