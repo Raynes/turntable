@@ -201,16 +201,12 @@
         key-field (keyword field)]
     (sql/with-connection (get-db config (:db q))
       (sql/with-query-results rows
-        [(format "SELECT %s FROM %s WHERE _start >= ?::timestamp AND _start <= ?::timestamp"
-                 (str field ",_time")
+        [(format "SELECT %s AS value, _time FROM %s WHERE _start >= ?::timestamp AND _start <= ?::timestamp"
+                 field
                  (:name q))
          (Timestamp. (to-ms from))
          (Timestamp. (to-ms until))]
-        (doall
-          (for [row rows]
-            (-> row
-                (dissoc key-field)
-                (assoc :value (row key-field)))))))))
+        (doall rows)))))
 
 (defn points [config targets from until]
   (let [queries (into {} (for [target targets]
