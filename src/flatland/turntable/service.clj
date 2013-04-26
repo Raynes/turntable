@@ -218,10 +218,10 @@
                                       (repeat nil))
                               {:payload :value :timestamp #(.getTime ^Date (:_time %))
                                :seq-generator (fn [query]
-                                                (let [segments (s/split query ":")
+                                                (let [segments (s/split query #":")
                                                       query (s/join ":" (butlast segments))
-                                                      field (last segments)])
-                                                (fetch-data config query field from until))})]
+                                                      field (last segments)]
+                                                  (fetch-data config query field from until)))})]
       {:target (query->target target)
        :datapoints datapoints})))
 
