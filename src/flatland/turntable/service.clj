@@ -1,5 +1,4 @@
 (ns flatland.turntable.service
-  (:refer-clojure :exclude [second])
   (:require [compojure.core :refer [GET POST ANY defroutes routes]]
             [compojure.route :refer [not-found]]
             [compojure.handler :refer [api]]
@@ -10,13 +9,17 @@
                              [format-response :refer :all])
             [me.raynes.fs :refer [exists?]]
             [cheshire.core :as json]
-            [clojure.edn :as edn])
-  (:import (java.sql Time)))
+            [clojure.edn :as edn]
+            [flatland.useful.utils :refer [with-adjustments]]
+            [flatland.useful.seq :refer [groupings]]
+            [clojure.string :refer [join]])
+  (:import (java.sql Timestamp)
+           (java.util Date Calendar)))
 
-(def running
-  "Queries that are currently running. It is a hash of the names associated
-   with the queries to a map containing the query, the interval between runs,
-   and the results from the last run."
+(defonce ^{:doc "Queries that are currently running. It is a hash of the names associated
+                with the queries to a map containing the query, the interval between runs,
+                and the results from the last run."}
+  running 
   (atom {}))
 
 (defn persist-queries
@@ -59,7 +62,7 @@
 (defn sql-time
   "Get an SQL time for the current time."
   []
-  (java.sql.Timestamp. (System/currentTimeMillis)))
+  (Timestamp. (System/currentTimeMillis)))
 
 (defn create-results-table
   "Create a results table for the query if one does not already exist.
@@ -71,9 +74,9 @@
       (sql/do-prepared prepared-sql args)
       (sql/do-commands (format "truncate %s" name)
                        (format "alter table %s
-                                  add column _start time,
-                                  add column _stop time,
-                                  add column _time time,
+                                  add column _start timestamp,
+                                  add column _stop timestamp,
+                                  add column _time timestamp,
                                   add column _elapsed integer"
                                name)))))
 
@@ -85,8 +88,8 @@
   (let [{:keys [results start stop time elapsed]} results]
     (apply sql/insert-records (:name query)
            (for [result results]
-             (merge result {"_start" (Time. (.getMillis start))
-                            "_stop" (Time. (.getMillis stop))
+             (merge result {"_start" (Timestamp. (.getMillis start))
+                            "_stop" (Timestamp. (.getMillis stop))
                             "_time" time
                             "_elapsed" elapsed})))))
 
@@ -165,25 +168,87 @@
   (doseq [[name {{:keys [db sql period]} :query}] (read-queries config)]
     (add-query config name db sql period)))
 
+(defn absolute-time [t ref]
+  (if (neg? t)
+    (+ ref t)
+    t))
+
+(defn unix-time
+  "Number of seconds since the unix epoch, as by Linux's time() system call."
+  [^Date date]
+  (-> date (.getTime) (quot 1000)))
+
+(defn subtract-day
+  "Subtract one day from the given date and return the output of getTime."
+  [^Date d]
+  (.getTime (doto (Calendar/getInstance)
+              (.setTime d)
+              (.add Calendar/DATE -1))))
+
+(defn split-targets
+  "Takes a seq of strings that look like \"query.field\" and returns a map of query
+   to all the fields to be extracted from them."
+  [targets]
+  (groupings first second (map #(.split % "\\.") targets)))
+
+(defn to-ms [x]
+  "Convert sections to milliseconds."
+  (* x 1000))
+
+(defn fetch-data [config query fields from until]
+  (let [q (get-in @running [query :query])]
+    (sql/with-connection (get-db config (:db q))
+      (sql/with-query-results rows
+        [(format "SELECT %s FROM %s WHERE _start >= ?::timestamp AND _start <= ?::timestamp"
+                 (join "," (conj fields "_time"))
+                 (:name q))
+         (Timestamp. (to-ms from))
+         (Timestamp. (to-ms until))]
+        (into [] rows)))))
+
+(defn points [config targets from until]
+  (for [[query fields] (split-targets targets)]
+    {:target query
+     :datapoints (fetch-data config query fields from until)}))
+
+(defn render-api [config]
+  (GET "/render" {{:strs [target from until]} :query-params}
+    (let [targets (if (coll? target) ; if there's only one target it's a string, but if multiple are
+                    target           ; specified then compojure will make a list of them
+                    [target])
+          now-date (Date.)
+          unix-now (unix-time now-date)]
+      (with-adjustments #(when (seq %) (Long/parseLong %)) [from until]
+        (let [until (if until
+                      (absolute-time until unix-now)
+                      unix-now)
+              from (if from
+                     (absolute-time from until)
+                     (unix-time (subtract-day now-date)))]
+          (or (points config targets from until) 
+              {:status 404}))))))
+
 (defn turntable-routes
   "Return API routes for turntable."
   [config]
   (-> (routes
-       (POST "/add" [name db sql period]
-         (if-let [added (add-query config name db sql (Long. period))]
-           (do (persist-queries config added)
-               {:status 204})
-           {:status 409
-            :headers {"Content-Type" "application/json;charset=utf-8"}
-            :body (json/encode {:error "Query by this name already exists. Remove it first."})}))
-       (POST "/remove" [name]
-         (remove-query config name)
-         {:status 204})
-       (ANY "/get" [name]
-            {:body (get-query name)})
-       (ANY "/list" []
-            {:body (list-queries)})
-       (not-found nil))
+        (render-api config)
+        (POST "/add" [name db sql period]
+              (if-let [added (add-query config name db sql period)]
+                (do (persist-queries config added)
+                    {:status 204})
+                {:status 409
+                 :headers {"Content-Type" "application/json;charset=utf-8"}
+                 :body (json/encode {:error "Query by this name already exists. Remove it first."})}))
+        (POST "/remove" [name]
+              (remove-query config name)
+              {:status 204})
+        (ANY "/get" [name]
+             {:body (get-query name)})
+        (ANY "/list" []
+             {:body (list-queries)})
+        (not-found nil))
       (api)
       (wrap-json-params)
       (wrap-json-response)))
+
