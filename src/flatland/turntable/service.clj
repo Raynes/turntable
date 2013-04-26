@@ -13,7 +13,7 @@
             [clojure.edn :as edn]
             [flatland.useful.utils :refer [with-adjustments]]
             [flatland.useful.seq :refer [groupings]]
-            [clojure.string :refer [join]])
+            [clojure.string :as s :refer [join]])
   (:import (java.sql Timestamp)
            (java.util Date Calendar))
   (:use flatland.useful.debug))
@@ -210,20 +210,18 @@
         (doall rows)))))
 
 (defn points [config targets from until]
-  (let [queries (into {} (for [target targets]
-                           (vec (.split target "/" 2))))
-        query->target (into {} (for [[query field] queries]
-                                 [query (str query "/" field)]))]
+  (let [query->target (into {} (for [target targets]
+                                 [(str "&" (s/replace target "/" ":"))
+                                  target]))]
     (for [[target datapoints]
-          ,,(query/query-seqs (zipmap (for [q (keys queries)]
-                                        (str "&" q))
+          ,,(query/query-seqs (zipmap (keys query->target)
                                       (repeat nil))
                               {:payload :value :timestamp #(.getTime ^Date (:_time %))
                                :seq-generator (fn [query]
-                                                (? (apply fetch-data
-                                                          (? [config
-                                                              query (get queries query)
-                                                              from]) until)))})]
+                                                (let [segments (s/split query ":")
+                                                      query (s/join ":" (butlast segments))
+                                                      field (last segments)])
+                                                (fetch-data config query field from until))})]
       {:target (query->target target)
        :datapoints datapoints})))
 
