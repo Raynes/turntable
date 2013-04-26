@@ -20,7 +20,7 @@
 (defonce ^{:doc "Queries that are currently running. It is a hash of the names associated
                 with the queries to a map containing the query, the interval between runs,
                 and the results from the last run."}
-  running 
+  running
   (atom {}))
 
 (defn persist-queries
@@ -148,7 +148,7 @@
 (defn remove-query
   "Stop a scheduled query and remove its entry from @running."
   [config name]
-  (future-cancel (get-in @running [name :scheduled-fn])) 
+  (future-cancel (get-in @running [name :scheduled-fn]))
   (persist-queries config (swap! running dissoc name)))
 
 (defn get-query
@@ -241,7 +241,7 @@
               from (if from
                      (absolute-time from until)
                      (unix-time (subtract-day now-date)))]
-          (or (points config targets from until) 
+          (or (points config targets from until)
               {:status 404}))))))
 
 (defn turntable-routes
@@ -267,4 +267,3 @@
       (api)
       (wrap-json-params)
       (wrap-json-response)))
-
