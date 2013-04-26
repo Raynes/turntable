@@ -8,6 +8,7 @@
                  [compojure "1.1.5"]
                  [cheshire "5.0.1"]
                  [ring-middleware-format "0.2.4"]
+                 [lamina "0.5.0-SNAPSHOT"]
                  [schejulure "0.1.4"]
                  [clj-time "0.4.4"]
                  [org.clojure/java.jdbc "0.2.3"]

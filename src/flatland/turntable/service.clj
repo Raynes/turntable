@@ -8,6 +8,7 @@
             (ring.middleware [format-params :refer :all]
                              [format-response :refer :all])
             [me.raynes.fs :refer [exists?]]
+            [lamina.query :as query]
             [cheshire.core :as json]
             [clojure.edn :as edn]
             [flatland.useful.utils :refer [with-adjustments]]
@@ -212,10 +213,19 @@
                 (assoc :value (row key-field)))))))))
 
 (defn points [config targets from until]
-  (for [target targets
-        :let [[query field] (.split target "\\.")]]
-    {:target target
-     :datapoints (fetch-data config query field from until)}))
+  (let [queries (into {} (for [target targets]
+                                 (.split target "/" 2)))
+        query->target (into {} (for [[query field] queries]
+                                 [query (str query "/" field)]))]
+    (for [[target datapoints]
+          ,,(query/query-seqs (zipmap (keys queries) (repeat nil))
+                              {:payload :value :timestamp :_time
+                               :seq-generator (fn [query]
+                                                (fetch-data config
+                                                            query (get queries query)
+                                                            from until))})]
+      {:target (query->target target)
+       :datapoints datapoints})))
 
 (defn render-api [config]
   (GET "/render" {{:strs [target from until]} :query-params}
