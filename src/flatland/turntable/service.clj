@@ -189,27 +189,33 @@
   "Takes a seq of strings that look like \"query.field\" and returns a map of query
    to all the fields to be extracted from them."
   [targets]
-  (groupings first second (map #(.split % "\\.") targets)))
+  (groupings first second))
 
 (defn to-ms [x]
   "Convert sections to milliseconds."
   (* x 1000))
 
-(defn fetch-data [config query fields from until]
-  (let [q (get-in @running [query :query])]
+(defn fetch-data [config query field from until]
+  (let [q (get-in @running [query :query])
+        key-field (keyword field)]
     (sql/with-connection (get-db config (:db q))
       (sql/with-query-results rows
         [(format "SELECT %s FROM %s WHERE _start >= ?::timestamp AND _start <= ?::timestamp"
-                 (join "," (conj fields "_time"))
+                 (str field ",_time")
                  (:name q))
          (Timestamp. (to-ms from))
          (Timestamp. (to-ms until))]
-        (into [] rows)))))
+        (doall
+          (for [row rows]
+            (-> row
+                (dissoc key-field)
+                (assoc :value (row key-field)))))))))
 
 (defn points [config targets from until]
-  (for [[query fields] (split-targets targets)]
-    {:target query
-     :datapoints (fetch-data config query fields from until)}))
+  (for [target targets
+        :let [[query field] (.split target "\\.")]]
+    {:target target
+     :datapoints (fetch-data config query field from until)}))
 
 (defn render-api [config]
   (GET "/render" {{:strs [target from until]} :query-params}
