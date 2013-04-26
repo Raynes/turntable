@@ -13,9 +13,11 @@
             [clojure.edn :as edn]
             [flatland.useful.utils :refer [with-adjustments]]
             [flatland.useful.seq :refer [groupings]]
-            [clojure.string :as s :refer [join]])
+            [clojure.string :as s :refer [join]]
+            [flatland.chronicle :refer [times-for]])
   (:import (java.sql Timestamp)
-           (java.util Date Calendar))
+           (java.util Date Calendar)
+           (org.joda.time DateTime))
   (:use flatland.useful.debug))
 
 (defonce ^{:doc "Queries that are currently running. It is a hash of the names associated
@@ -61,18 +63,13 @@
     ["select count(*) from information_schema.tables where table_name = ?" table]
     (-> rows first :count pos?)))
 
-(defn sql-time
-  "Get an SQL time for the current time."
-  []
-  (Timestamp. (System/currentTimeMillis)))
-
 (defn create-results-table
   "Create a results table for the query if one does not already exist.
    If it does not exist, uses CREATE TABLE AS and then adds metadata keys
    prefixed with underscores to the table for the other items."
   [{:keys [sql name]}]
   (when-not (table-exists? name)
-    (let [[prepared-sql & args] (prepare (format "create table \"%s\" as %s" name sql) (sql-time))]
+    (let [[prepared-sql & args] (prepare (format "create table \"%s\" as %s" name sql) (Timestamp. (System/currentTimeMillis)))]
       (sql/do-prepared prepared-sql args)
       (sql/do-commands (format "truncate \"%s\"" name)
                        (format "alter table \"%s\"
@@ -116,35 +113,45 @@
 (defn query-fn
   "Returns a function that runs a query, records start and end time,
    and updates running with the results and times when finished."
-  [config {:keys [sql name] :as query} db]
-  (fn []
-    (try
-      (sql/with-connection (get-db config db)
-        (let [start (now)
-              time (sql-time)
-              results (run-query config sql time)
-              stop (now)]
-          (persist-results config query
-                           {:results results
-                            :start start
-                            :stop stop
-                            :time time
-                            :elapsed (in-msecs (interval start stop))})))
-      (catch Exception e (.printStackTrace e)))))
+  ([config {:keys [sql name] :as query} db]
+   (fn qfn
+     ([] (qfn (System/currentTimeMillis)))
+     ([time]
+      (try
+        (sql/with-connection (get-db config db)
+          (let [start (now)
+                time (Timestamp. time)
+                results (run-query config sql time)
+                stop (now)]
+            (persist-results config query
+                             {:results results
+                              :start start
+                              :stop stop
+                              :time time
+                              :elapsed (in-msecs (interval start stop))})))
+        (catch Exception e (.printStackTrace e)))))))
+
+(defn backfill-query [start period qfn]
+  (doseq [t (times-for period (DateTime. start))
+          :while (< (.getMillis t) (.getMillis (now)))]
+    (qfn (.getMillis t)))
+  (println "Backfill finished."))
 
 (defn add-query
   "Add a query to run at scheduled times (via the cron-like map used by schejulure)."
-  [config name db sql period]
+  [config name db sql period backfill]
   (when-not (contains? @running name)
     (let [query {:sql sql
                  :name name
                  :db db
                  :period period}
-          scheduled (schedule (edn/read-string period)
-                              (query-fn config query db))]
+          period (edn/read-string period)
+          qfn (query-fn config query db)]
+      (when backfill
+        (.start (Thread. (fn [] (backfill-query (Long/parseLong backfill) period qfn)))))
       (swap! running update-in [name] assoc
              :query query
-             :scheduled-fn scheduled))))
+             :scheduled-fn (schedule period qfn)))))
 
 (defn remove-query
   "Stop a scheduled query and remove its entry from @running."
@@ -168,7 +175,7 @@
   "Startup persisted queries."
   [config]
   (doseq [[name {{:keys [db sql period]} :query}] (read-queries config)]
-    (add-query config name db sql period)))
+    (add-query config name db sql period nil)))
 
 (defn absolute-time [t ref]
   (if (neg? t)
@@ -247,8 +254,8 @@
   [config]
   (-> (routes
         (render-api config)
-        (POST "/add" [name db sql period]
-              (if-let [added (add-query config name db sql period)]
+        (POST "/add" [name db sql period backfill]
+              (if-let [added (add-query config name db sql period backfill)]
                 (do (persist-queries config added)
                     {:status 204})
                 {:status 409
