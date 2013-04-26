@@ -70,10 +70,10 @@
    prefixed with underscores to the table for the other items."
   [{:keys [sql name]}]
   (when-not (table-exists? name)
-    (let [[prepared-sql & args] (prepare (format "create table %s as %s" name sql) (sql-time))]
+    (let [[prepared-sql & args] (prepare (format "create table \"%s\" as %s" name sql) (sql-time))]
       (sql/do-prepared prepared-sql args)
-      (sql/do-commands (format "truncate %s" name)
-                       (format "alter table %s
+      (sql/do-commands (format "truncate \"%s\"" name)
+                       (format "alter table \"%s\"
                                   add column _start timestamp,
                                   add column _stop timestamp,
                                   add column _time timestamp,
@@ -86,7 +86,7 @@
   [config query results]
   (create-results-table query)
   (let [{:keys [results start stop time elapsed]} results]
-    (apply sql/insert-records (:name query)
+    (apply sql/insert-records (str "\"" (:name query) "\"")
            (for [result results]
              (merge result {"_start" (Timestamp. (.getMillis start))
                             "_stop" (Timestamp. (.getMillis stop))
