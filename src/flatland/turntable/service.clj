@@ -15,7 +15,8 @@
             [flatland.useful.seq :refer [groupings]]
             [clojure.string :refer [join]])
   (:import (java.sql Timestamp)
-           (java.util Date Calendar)))
+           (java.util Date Calendar))
+  (:use flatland.useful.debug))
 
 (defonce ^{:doc "Queries that are currently running. It is a hash of the names associated
                 with the queries to a map containing the query, the interval between runs,
@@ -210,7 +211,7 @@
 
 (defn points [config targets from until]
   (let [queries (into {} (for [target targets]
-                                 (vec (.split target "/" 2))))
+                           (vec (.split target "/" 2))))
         query->target (into {} (for [[query field] queries]
                                  [query (str query "/" field)]))]
     (for [[target datapoints]
@@ -219,9 +220,10 @@
                                       (repeat nil))
                               {:payload :value :timestamp #(.getTime ^Date (:_time %))
                                :seq-generator (fn [query]
-                                                (fetch-data config
-                                                            query (get queries query)
-                                                            from until))})]
+                                                (? (apply fetch-data
+                                                          (? [config
+                                                              query (get queries query)
+                                                              from]) until)))})]
       {:target (query->target target)
        :datapoints datapoints})))
 
