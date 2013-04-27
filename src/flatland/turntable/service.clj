@@ -14,7 +14,8 @@
             [flatland.useful.utils :refer [with-adjustments]]
             [flatland.useful.seq :refer [groupings]]
             [clojure.string :as s :refer [join]]
-            [flatland.chronicle :refer [times-for]])
+            [flatland.chronicle :refer [times-for]]
+            [ring.middleware.cors :refer [wrap-cors]])
   (:import (java.sql Timestamp)
            (java.util Date Calendar)
            (org.joda.time DateTime))
@@ -230,7 +231,8 @@
                                                       field (last segments)]
                                                   (fetch-data config query field from until)))})]
       {:target (query->target target)
-       :datapoints datapoints})))
+       :datapoints (for [datapoint datapoints]
+                     ((juxt :value :timestamp) datapoint))})))
 
 (defn render-api [config]
   (GET "/render" {{:strs [target from until]} :query-params}
@@ -270,5 +272,9 @@
              {:body (list-queries)})
         (not-found nil))
       (api)
+      (wrap-cors
+        :access-control-allow-origin #".*"
+        :access-control-allow-headers "X-Requested-With, X-File-Name, Origin, Content-Type"
+        :access-control-allow-methods [:get, :post])
       (wrap-json-params)
       (wrap-json-response)))
