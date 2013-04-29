@@ -3,7 +3,6 @@
             [compojure.route :refer [not-found]]
             [compojure.handler :refer [api]]
             [clj-time.core :refer [in-msecs now interval]]
-            [schejulure.core :refer [schedule]]
             [clojure.java.jdbc :as sql]
             (ring.middleware [format-params :refer :all]
                              [format-response :refer :all])
@@ -15,7 +14,8 @@
             [flatland.useful.seq :refer [groupings]]
             [clojure.string :as s :refer [join]]
             [flatland.chronicle :refer [times-for]]
-            [ring.middleware.cors :refer [wrap-cors]])
+            [ring.middleware.cors :refer [wrap-cors]]
+            [flatland.turntable.timer :refer [schedule]])
   (:import (java.sql Timestamp)
            (java.util Date Calendar)
            (org.joda.time DateTime))
@@ -152,12 +152,12 @@
         (.start (Thread. (fn [] (backfill-query (Long/parseLong backfill) period qfn)))))
       (swap! running update-in [name] assoc
              :query query
-             :scheduled-fn (schedule period qfn)))))
+             :scheduled-fn (schedule qfn period)))))
 
 (defn remove-query
   "Stop a scheduled query and remove its entry from @running."
   [config name]
-  (future-cancel (get-in @running [name :scheduled-fn]))
+  (.cancel (get-in @running [name :scheduled-fn]))
   (persist-queries config (swap! running dissoc name)))
 
 (defn get-query
