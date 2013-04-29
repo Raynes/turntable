@@ -168,7 +168,8 @@
 (defn list-queries
   "List all of the queries."
   []
-  (into {}
+  ;; TODO: Just store this stuff in the right format in the first place.
+  (group-by (comp :db :query second)
         (for [[k v] @running]
           [k (dissoc v :scheduled-fn :results)])))
 
