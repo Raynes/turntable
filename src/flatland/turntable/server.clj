@@ -3,7 +3,7 @@
                                                 persist-results-to-db]]))
 
 (def config (merge (read-string (slurp "sample.config.clj"))
-                   {:persist-fns [persist-results-to-atom persist-results-to-db]}))
+                   {:persist-fns [#_persist-results-to-atom persist-results-to-db]}))
 
 (init-saved-queries config)
 
