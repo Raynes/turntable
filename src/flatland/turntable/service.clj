@@ -268,7 +268,7 @@
               {:status 204})
         (ANY "/get" [name]
              {:body (get-query name)})
-        (ANY "/list" []
+        (ANY "/queries" []
              {:body (list-queries)})
         (not-found nil))
       (api)
