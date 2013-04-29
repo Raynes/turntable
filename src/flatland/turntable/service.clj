@@ -267,7 +267,9 @@
               (remove-query config name)
               {:status 204})
         (ANY "/get" [name]
-             {:body (get-query name)})
+             (if-let [query (get-query name)]
+               {:body query}
+               {:status 404}))
         (ANY "/queries" []
              {:body (list-queries)})
         (not-found nil))
