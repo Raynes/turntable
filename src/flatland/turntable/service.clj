@@ -169,9 +169,11 @@
   "List all of the queries."
   []
   ;; TODO: Just store this stuff in the right format in the first place.
-  (group-by (comp :db second)
-        (for [[k v] @running]
-          [k (:query v)])))
+  (reduce (fn [acc [k v]]
+            (let [q (:query v)]
+              (update-in acc [(:db q)] assoc k (:sql q))))
+          {}
+          @running))
 
 (defn init-saved-queries
   "Startup persisted queries."
