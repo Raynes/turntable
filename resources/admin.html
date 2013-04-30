@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<title>Turntable Admin</title>
+
+<head>
+  <link rel="stylesheet" type="text/css" href="lib/nv.d3.css">
+  <link rel="stylesheet" type="text/css" href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap-combined.min.css">
+  <link rel="stylesheet" type="text/css" href="admin.css">
+
+  <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/d3/2.10.0/d3.v2.min.js"></script>
+  <script src="lib/nv.d3.js"></script>
+
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
+  <script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
+
+  <script src="src/telegraph.js"></script>
+
+  <script>
+    window.Telegraph = new Telegraph();
+    nv.addGraph(function() {
+      var chart = Telegraph.queryList();
+      var data = Telegraph.getQueries({url: "http://localhost:3000/queries"});
+
+      d3.select('.queries')
+        .datum(data)
+        .call(chart);
+      return chart;
+    });
+    
+    $(function() {
+
+      getDbs = function() {
+        var queries;
+        var dbs = [];
+        $.ajax({
+          url: 'http://localhost:3000/queries',
+          type: 'get',
+          dataType: 'json',
+          async: false,
+          success: function(data) { queries = data; }
+        });
+        $.each(queries, function(k, v) {
+          dbs.push(k);
+        });
+        return dbs;
+      };
+
+      $('#stage').click(function() {
+        $.ajax({
+          url: 'http://localhost:3000/stage',
+          type: 'post',
+          data: {
+            sql: $('#addarea').val(),
+            db: $('#dbs').find(':selected').text()
+          },
+          success: function(data) {
+            $('#stagingarea').val(data);
+          }
+        });
+      });
+
+      $('#add').click(function() {
+        alert('Clicked add.');
+      });
+
+      $.each(getDbs(), function(index, db) {
+        $('#dbs').append('<option value=' + db + '>' + db + '</option>')
+      });
+    });
+  </script>
+
+</head>
+
+<body>
+  <div id="add-container">
+    <form>
+      <textarea id="addarea"></textarea>
+      <select id="dbs" name="dbs">
+      </select>
+      <div id="buttons">
+        <button type="button" id="stage" class="button">Stage</button>
+        <button type="button" id="add" class="button">Add</button>
+      </div>
+    </form>
+  </div>
+  <div id="staging-container">
+    <textarea id="stagingarea"></textarea>
+  </div>
+  <div class="clear"></div>
+  <div id="queries" class="chart queries">
+  </div>
+</body>

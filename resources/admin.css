@@ -1,0 +1,30 @@
+#add-container {
+  width: 60%;
+  height: 300px;
+  float: left;
+}
+
+#staging-container {
+  float: right;
+  width: 38%;
+}
+
+#queries {
+  margin-top: 50px;
+}
+
+#addarea {
+  width: 100%;
+  height: 300px;
+}
+
+#stagingarea {
+  width: 100%;
+  height: 300px;
+}
+
+#buttons {
+  float: right;
+}
+
+.clear { clear: both; }
