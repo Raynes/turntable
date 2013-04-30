@@ -15,7 +15,9 @@
             [clojure.string :as s :refer [join]]
             [flatland.chronicle :refer [times-for]]
             [ring.middleware.cors :refer [wrap-cors]]
-            [flatland.turntable.timer :refer [schedule]])
+            [flatland.turntable.timer :refer [schedule]]
+            [clojure.stacktrace :refer [print-stack-trace]]
+            [clojure.pprint :refer [pprint]])
   (:import (java.sql Timestamp)
            (java.util Date Calendar)
            (org.joda.time DateTime))
@@ -131,6 +133,14 @@
                               :time time
                               :elapsed (in-msecs (interval start stop))})))
         (catch Exception e (.printStackTrace e)))))))
+
+(defn stage
+  "Run a query the same way turntable would run it for staging purposes."
+  [config db sql]
+  (try
+    (with-out-str (pprint (sql/with-connection (get-db config db)
+                            (run-query config sql (Timestamp. (System/currentTimeMillis))))))
+    (catch Exception e (with-out-str (print-stack-trace e)))))
 
 (defn backfill-query [start period qfn]
   (doseq [t (times-for period (DateTime. start))
@@ -269,6 +279,8 @@
         (POST "/remove" [name]
               (remove-query config name)
               {:status 204})
+        (POST "/stage" [db sql]
+            (stage config db sql))
         (ANY "/get" [name]
              (if-let [query (get-query name)]
                {:body query}
