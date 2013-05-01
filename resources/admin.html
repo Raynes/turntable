@@ -88,7 +88,10 @@
               name: name
             },
             success: function(data) {
-              alert("successful!" + data); // Do something useful.
+              $('#stagingarea').val(JSON.stringify(data));
+            },
+            error: function(req, statusText, e) {
+              if (req.status == 409) alert('Query by this name already exists!');
             }
           });
         };

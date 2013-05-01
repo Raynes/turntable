@@ -270,9 +270,9 @@
   (-> (routes
         (render-api config)
         (POST "/add" [name db sql period backfill]
-              (if-let [added (add-query config name db sql period backfill)]
+              (if-let [{{:keys [query]} name :as added} (add-query config name db sql period backfill)]
                 (do (persist-queries config added)
-                    {:status 204})
+                    {:body query})
                 {:status 409
                  :headers {"Content-Type" "application/json;charset=utf-8"}
                  :body (json/encode {:error "Query by this name already exists. Remove it first."})}))
