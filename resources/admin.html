@@ -28,8 +28,11 @@
     });
     
     $(function() {
+      var ta = window.ta || {};
 
-      getDbs = function() {
+      window.ta = ta;
+
+      ta.getDbs = function() {
         var queries;
         var dbs = [];
         $.ajax({
@@ -45,13 +48,23 @@
         return dbs;
       };
 
+      ta.getChronicle = function() {
+        var text = $('#chronicle').val();
+        if (text == "") return text = "{}";
+        else return text;
+      };
+
+      ta.getDb = function() {
+        return $('#dbs').find(':selected').text();
+      };
+
       $('#stage').click(function() {
         $.ajax({
           url: 'http://localhost:3000/stage',
           type: 'post',
           data: {
             sql: $('#addarea').val(),
-            db: $('#dbs').find(':selected').text()
+            db: ta.getDb()
           },
           success: function(data) {
             $('#stagingarea').val(data);
@@ -60,11 +73,29 @@
       });
 
       $('#add').click(function() {
-        alert('Clicked add.');
+        var name = $('#queryname').val();
+        if (name == "") {
+          alert("You have to enter a query name!");
+          return false;
+        } else {
+          $.ajax({
+            url: 'http://localhost:3000/add',
+            type: 'post',
+            data: {
+              sql: $('#addarea').val(),
+              db: ta.getDb(),
+              period: ta.getChronicle(),
+              name: name
+            },
+            success: function(data) {
+              alert("successful!" + data); // Do something useful.
+            }
+          });
+        };
       });
 
-      $.each(getDbs(), function(index, db) {
-        $('#dbs').append('<option value=' + db + '>' + db + '</option>')
+      $.each(ta.getDbs(), function(index, db) {
+        $('#dbs').append('<option value=' + db + '>' + db + '</option>');
       });
     });
   </script>
@@ -77,6 +108,8 @@
       <textarea id="addarea"></textarea>
       <select id="dbs" name="dbs">
       </select>
+      <textarea id="chronicle" placeholder="{:minute [0 15 30 45]}"></textarea>
+      <input type="text" id="queryname" placeholder="a:query:name"></input>
       <div id="buttons">
         <button type="button" id="stage" class="button">Stage</button>
         <button type="button" id="add" class="button">Add</button>

@@ -1,3 +1,7 @@
+body {
+  min-width: 1170px;
+}
+
 #add-container {
   width: 60%;
   height: 300px;
@@ -25,6 +29,16 @@
 
 #buttons {
   float: right;
+}
+
+#chronicle {
+  width: 25%;
+  margin-left: 30px;
+}
+
+#queryname {
+  width: 15%;
+  margin-left: 30px;
 }
 
 .clear { clear: both; }
