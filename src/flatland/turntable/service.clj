@@ -167,8 +167,10 @@
 (defn remove-query
   "Stop a scheduled query and remove its entry from @running."
   [config name]
-  (.cancel (get-in @running [name :scheduled-fn]))
-  (persist-queries config (swap! running dissoc name)))
+  (if-let [scheduled (get-in @running [name :scheduled-fn])]
+    (do (.cancel scheduled)
+        (persist-queries config (swap! running dissoc name))
+        true)))
 
 (defn get-query
   "Fetch the currently running query."
@@ -277,8 +279,9 @@
                  :headers {"Content-Type" "application/json;charset=utf-8"}
                  :body (json/encode {:error "Query by this name already exists. Remove it first."})}))
         (POST "/remove" [name]
-              (remove-query config name)
-              {:status 204})
+              (if (remove-query config name)
+                {:status 204}
+                {:status 404}))
         (POST "/stage" [db sql]
             (stage config db sql))
         (ANY "/get" [name]
