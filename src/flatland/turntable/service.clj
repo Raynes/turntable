@@ -154,7 +154,7 @@
   (when-not (contains? @running name)
     (let [query {:sql sql
                  :name name
-                 :db db
+                 :group db
                  :period period}
           period (edn/read-string period)
           qfn (query-fn config query db)]
@@ -183,15 +183,15 @@
   ;; TODO: Just store this stuff in the right format in the first place.
   (reduce (fn [acc [k v]]
             (let [q (:query v)]
-              (update-in acc [(:db q)] assoc k (:sql q))))
+              (update-in acc [(:group q)] assoc k (:sql q))))
           (zipmap (keys (:servers config)) (repeat {}))
           @running))
 
 (defn init-saved-queries
   "Startup persisted queries."
   [config]
-  (doseq [[name {{:keys [db sql period]} :query}] (read-queries config)]
-    (add-query config name db sql period nil)))
+  (doseq [[name {{:keys [group sql period]} :query}] (read-queries config)]
+    (add-query config name group sql period nil)))
 
 (defn absolute-time [t ref]
   (if (neg? t)
@@ -223,7 +223,7 @@
 (defn fetch-data [config query field from until]
   (let [q (get-in @running [query :query])
         key-field (keyword field)]
-    (sql/with-connection (get-db config (:db q))
+    (sql/with-connection (get-db config (:group q))
       (sql/with-query-results rows
         [(format "SELECT %s AS value, _time FROM \"%s\" WHERE _start >= ?::timestamp AND _start <= ?::timestamp"
                  field
@@ -271,8 +271,8 @@
   [config]
   (-> (routes
         (render-api config)
-        (POST "/add" [name db sql period backfill]
-              (if-let [{{:keys [query]} name :as added} (add-query config name db sql period backfill)]
+        (POST "/add" [name group sql period backfill]
+              (if-let [{{:keys [query]} name :as added} (add-query config name group sql period backfill)]
                 (do (persist-queries config added)
                     {:body query})
                 {:status 409
@@ -282,8 +282,8 @@
               (if (remove-query config name)
                 {:status 204}
                 {:status 404}))
-        (POST "/stage" [db sql]
-            (stage config db sql))
+        (POST "/stage" [group sql]
+            (stage config group sql))
         (ANY "/get" [name]
              (if-let [query (get-query name)]
                {:body query}
