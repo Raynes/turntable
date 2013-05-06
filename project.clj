@@ -8,7 +8,7 @@
                  [compojure "1.1.5"]
                  [cheshire "5.0.1"]
                  [ring-middleware-format "0.2.4"]
-                 [lamina "0.5.0-SNAPSHOT"]
+                 [lamina "0.5.0-beta15"]
                  [org.clojure/java.jdbc "0.2.3"]
                  [postgresql/postgresql "8.4-702.jdbc4"]
                  [me.raynes/fs "1.4.0"]
