@@ -296,8 +296,8 @@
                {:status 404}))
         (ANY "/queries" []
              {:body (list-queries)})
-        (ANY "/dbs" []
-             {:body (list-dbs config)})
+        (ANY "/schema" []
+             {:body {:db (list-dbs config)}})
         (not-found nil))
       (api)
       (wrap-cors
