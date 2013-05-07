@@ -37,6 +37,7 @@
           group: $("#group").val()
         }, function(d) {
           $("#stagingarea").val(d);
+        }, function() {
           e.target.disabled = false;
         });
       });
