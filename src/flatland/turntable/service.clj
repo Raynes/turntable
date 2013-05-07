@@ -183,11 +183,15 @@
   [name]
   (dissoc (@running name) :scheduled-fn))
 
+(defn list-dbs
+  "List all of the configured databases."
+  [config]
+  (keys (:servers config)))
+
 (defn list-queries
   "List all of the queries."
-  [config]
-  {:queries (map :query (vals @running))
-   :dbs (keys (:servers config))})
+  []
+  (map :query (vals @running)))
 
 (defn init-saved-queries
   "Startup persisted queries."
@@ -291,7 +295,9 @@
                {:body query}
                {:status 404}))
         (ANY "/queries" []
-             {:body (list-queries config)})
+             {:body (list-queries)})
+        (ANY "/dbs" []
+             {:body (list-dbs config)})
         (not-found nil))
       (api)
       (wrap-cors
