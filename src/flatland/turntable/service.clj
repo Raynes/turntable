@@ -152,7 +152,9 @@
   "Add a query to run at scheduled times (via the cron-like map used by schejulure)."
   [config name db sql period backfill]
   (when-not (contains? @running name)
-    (let [period (edn/read-string period)
+    (let [period (if (map? period)
+                   period
+                   (edn/read-string period))
           period (if (seq period)
                    period
                    {})
