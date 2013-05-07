@@ -150,7 +150,7 @@
 
 (defn add-query
   "Add a query to run at scheduled times (via the cron-like map used by schejulure)."
-  [config name db query period backfill]
+  [config name db query period added-time backfill]
   (when-not (contains? @running name)
     (let [period (if (map? period)
                    period
@@ -159,6 +159,7 @@
                    period
                    {})
           query-map {:query query
+                     :added (or added-time (Date.))
                      :name name
                      :db db
                      :period period}
@@ -191,8 +192,8 @@
 (defn init-saved-queries
   "Startup persisted queries."
   [config]
-  (doseq [[name {{:keys [db query period]} :query}] (read-queries config)]
-    (add-query config name db query period nil)))
+  (doseq [[name {{:keys [db query period added]} :query}] (read-queries config)]
+    (add-query config name db query period added nil)))
 
 (defn absolute-time [t ref]
   (if (neg? t)
@@ -273,7 +274,7 @@
   (-> (routes
         (render-api config)
         (POST "/add" [name db query period backfill]
-              (if-let [{{:keys [query]} name :as added} (add-query config name db query period backfill)]
+              (if-let [{{:keys [query]} name :as added} (add-query config name db query period nil backfill)]
                 (do (persist-queries config added)
                     {:body query})
                 {:status 409
