@@ -28,13 +28,13 @@
     Telegraph.listQueries(".queries");
 
     $(document).ready(function() {
-      Telegraph.addGroupOpts("#group");
+      Telegraph.addGroupOpts("#db");
 
       $("#test").click(function(e) {
         e.target.disabled = true;
         Telegraph.testQuery({
           sql: $("#query").val(),
-          group: $("#group").val()
+          group: $("#db").val()
         }, function(d) {
           $("#stagingarea").val(d);
         }, function() {
@@ -46,7 +46,7 @@
         e.target.disabled = true;
         Telegraph.addQuery({
            sql: $("#query").val(),
-           group: $("#group").val(),
+           group: $("#db").val(),
            period: $("#period").val(),
            name: $("#name").val()
         }, function(d) {
@@ -61,10 +61,11 @@
 <body>
   <div id="add-container">
     <form>
-      <textarea id="query"></textarea>
-      <select id="group" name="group"></select>
-      <textarea id="period" placeholder="{:minute [0 15 30 45]}"></textarea>
+      <select id="db"></select>
       <input type="text" id="name" placeholder="a:query:name"></input>
+      <textarea id="query"></textarea>
+      Run at
+      <textarea id="period" placeholder="{:minute [0 15 30 45]}"></textarea>
       <div id="buttons">
         <button type="button" id="test" class="button">Test</button>
         <button type="button" id="add" class="button">Add</button>
