@@ -31,26 +31,28 @@
       Telegraph.addGroupOpts("#db");
 
       $("#test").click(function(e) {
-        e.target.disabled = true;
+        var $button = $(this);
+        $button.attr("disabled", true);
         Telegraph.testQuery({
           sql: $("#query").val(),
           group: $("#db").val()
         }, function(d) {
           $("#stagingarea").val(d);
         }, function() {
-          e.target.disabled = false;
+          $button.attr("disabled", false);
         });
       });
 
       $("#add").click(function(e) {
-        e.target.disabled = true;
+        var $button = $(this);
+        $button.attr("disabled", true);
         Telegraph.addQuery({
-           sql: $("#query").val(),
-           group: $("#db").val(),
-           period: $("#period").val(),
-           name: $("#name").val()
+          sql: $("#query").val(),
+          group: $("#db").val(),
+          period: $("#period").val(),
+          name: $("#name").val()
         }, function(d) {
-           e.target.disabled = false;
+          $button.attr("disabled", false);
         });
       });
     });
