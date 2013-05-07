@@ -25,29 +25,29 @@
       queryKey:   "sql"
     });
 
-    Telegraph.listQueries('.queries');
+    Telegraph.listQueries(".queries");
 
     $(document).ready(function() {
-      Telegraph.addGroupOpts('#group');
+      Telegraph.addGroupOpts("#group");
 
-      $('#test').click(function(e) {
+      $("#test").click(function(e) {
         e.target.disabled = true;
         Telegraph.testQuery({
-          sql: $('#query').val(),
-          group: $('#group').val()
+          sql: $("#query").val(),
+          group: $("#group").val()
         }, function(d) {
-          $('#stagingarea').val(d);
+          $("#stagingarea").val(d);
           e.target.disabled = false;
         });
       });
 
-      $('#add').click(function(e) {
+      $("#add").click(function(e) {
         e.target.disabled = true;
         Telegraph.addQuery({
-           sql: $('#query').val(),
-           group: $('#group').val(),
-           period: $('#period').val(),
-           name: $('#name').val()
+           sql: $("#query").val(),
+           group: $("#group").val(),
+           period: $("#period").val(),
+           name: $("#name").val()
         });
       });
     });
