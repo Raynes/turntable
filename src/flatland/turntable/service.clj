@@ -285,8 +285,8 @@
               (if (remove-query config name)
                 {:status 204}
                 {:status 404}))
-        (POST "/stage" [group sql]
-            (stage config group sql))
+        (GET "/stage" [group sql]
+             (stage config group sql))
         (ANY "/get" [name]
              (if-let [query (get-query name)]
                {:body query}
