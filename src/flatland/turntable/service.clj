@@ -185,12 +185,8 @@
 (defn list-queries
   "List all of the queries."
   [config]
-  ;; TODO: Just store this stuff in the right format in the first place.
-  (reduce (fn [acc [k v]]
-            (let [q (:query v)]
-              (update-in acc [(:db q)] assoc k (:sql q))))
-          (zipmap (keys (:servers config)) (repeat {}))
-          @running))
+  {:queries (map :query (vals @running))
+   :dbs (keys (:servers config))})
 
 (defn init-saved-queries
   "Startup persisted queries."
