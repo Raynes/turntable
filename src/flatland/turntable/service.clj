@@ -70,9 +70,9 @@
   "Create a results table for the query if one does not already exist.
    If it does not exist, uses CREATE TABLE AS and then adds metadata keys
    prefixed with underscores to the table for the other items."
-  [{:keys [sql name]}]
+  [{:keys [query name]}]
   (when-not (table-exists? name)
-    (let [[prepared-sql & args] (prepare (format "create table \"%s\" as %s" name sql) (Timestamp. (System/currentTimeMillis)))]
+    (let [[prepared-sql & args] (prepare (format "create table \"%s\" as %s" name query) (Timestamp. (System/currentTimeMillis)))]
       (sql/do-prepared prepared-sql args)
       (sql/do-commands (format "truncate \"%s\"" name)
                        (format "alter table \"%s\"
@@ -116,7 +116,7 @@
 (defn query-fn
   "Returns a function that runs a query, records start and end time,
    and updates running with the results and times when finished."
-  ([config {:keys [sql name] :as query} db]
+  ([config {:keys [query name] :as query} db]
    (fn qfn
      ([] (qfn (System/currentTimeMillis)))
      ([time]
@@ -124,7 +124,7 @@
         (sql/with-connection (get-db config db)
           (let [start (now)
                 time (Timestamp. time)
-                results (run-query config sql time)
+                results (run-query config query time)
                 stop (now)]
             (persist-results config query
                              {:results results
@@ -150,7 +150,7 @@
 
 (defn add-query
   "Add a query to run at scheduled times (via the cron-like map used by schejulure)."
-  [config name db sql period backfill]
+  [config name db query period backfill]
   (when-not (contains? @running name)
     (let [period (if (map? period)
                    period
@@ -158,7 +158,7 @@
           period (if (seq period)
                    period
                    {})
-          query {:sql sql
+          query {:query query
                  :name name
                  :db db
                  :period period}
@@ -191,8 +191,8 @@
 (defn init-saved-queries
   "Startup persisted queries."
   [config]
-  (doseq [[name {{:keys [db sql period]} :query}] (read-queries config)]
-    (add-query config name db sql period nil)))
+  (doseq [[name {{:keys [db query period]} :query}] (read-queries config)]
+    (add-query config name db query period nil)))
 
 (defn absolute-time [t ref]
   (if (neg? t)
@@ -272,8 +272,8 @@
   [config]
   (-> (routes
         (render-api config)
-        (POST "/add" [name db sql period backfill]
-              (if-let [{{:keys [query]} name :as added} (add-query config name db sql period backfill)]
+        (POST "/add" [name db query period backfill]
+              (if-let [{{:keys [query]} name :as added} (add-query config name db query period backfill)]
                 (do (persist-queries config added)
                     {:body query})
                 {:status 409
@@ -283,8 +283,8 @@
               (if (remove-query config name)
                 {:status 204}
                 {:status 404}))
-        (GET "/stage" [db sql]
-             (stage config db sql))
+        (GET "/stage" [db query]
+             (stage config db query))
         (ANY "/get" [name]
              (if-let [query (get-query name)]
                {:body query}
