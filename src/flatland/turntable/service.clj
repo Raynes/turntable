@@ -226,19 +226,22 @@
   "Convert sections to milliseconds."
   (* x 1000))
 
-(defn fetch-data [config query field from until]
+(defn fetch-data [config query field from until limit]
   (let [q (get-in @running [query :query])
         key-field (keyword field)]
     (sql/with-connection (get-db config (:db q))
       (sql/with-query-results rows
-        [(format "SELECT %s AS value, _time FROM \"%s\" WHERE _start >= ?::timestamp AND _start <= ?::timestamp"
-                 field
-                 (:name q))
-         (Timestamp. (to-ms from))
-         (Timestamp. (to-ms until))]
+        (if limit
+          [(format "SELECT %s AS value, _time FROM \"%s\" LIMIT ?::int" field (:name q))
+           limit]
+          [(format "SELECT %s AS value, _time FROM \"%s\" WHERE _start >= ?::timestamp AND _start <= ?::timestamp"
+                   field
+                   (:name q))
+           (Timestamp. (to-ms from))
+           (Timestamp. (to-ms until))])
         (doall rows)))))
 
-(defn points [config targets from until]
+(defn points [config targets from until limit]
   (let [query->target (into {} (for [target targets]
                                  [(str "&" (s/replace target "/" ":"))
                                   target]))]
@@ -250,13 +253,13 @@
                                                 (let [segments (s/split query #":")
                                                       query (s/join ":" (butlast segments))
                                                       field (last segments)]
-                                                  (fetch-data config query field from until)))})]
+                                                  (fetch-data config query field from until limit)))})]
       {:target (query->target target)
        :datapoints (for [datapoint datapoints]
                      ((juxt :value :timestamp) datapoint))})))
 
 (defn render-api [config]
-  (GET "/render" {{:strs [target from until]} :query-params}
+  (GET "/render" {{:strs [target from limit until]} :query-params}
     (let [targets (if (coll? target) ; if there's only one target it's a string, but if multiple are
                     target           ; specified then compojure will make a list of them
                     [target])
@@ -269,7 +272,7 @@
               from (if from
                      (absolute-time from until)
                      (unix-time (subtract-day now-date)))]
-          (or (points config targets from until)
+          (or (points config targets from until limit)
               {:status 404}))))))
 
 (defn turntable-routes
