@@ -116,7 +116,7 @@
 (defn query-fn
   "Returns a function that runs a query, records start and end time,
    and updates running with the results and times when finished."
-  ([config {:keys [query name] :as query} db]
+  ([config {:keys [query name] :as query-map} db]
    (fn qfn
      ([] (qfn (System/currentTimeMillis)))
      ([time]
@@ -126,7 +126,7 @@
                 time (Timestamp. time)
                 results (run-query config query time)
                 stop (now)]
-            (persist-results config query
+            (persist-results config query-map
                              {:results results
                               :start start
                               :stop stop
@@ -158,15 +158,15 @@
           period (if (seq period)
                    period
                    {})
-          query {:query query
-                 :name name
-                 :db db
-                 :period period}
-          qfn (query-fn config query db)]
+          query-map {:query query
+                     :name name
+                     :db db
+                     :period period}
+          qfn (query-fn config query-map db)]
       (when backfill
         (.start (Thread. (fn [] (backfill-query (Long/parseLong backfill) period qfn)))))
       (swap! running update-in [name] assoc
-             :query query
+             :query query-map
              :scheduled-fn (schedule qfn period)))))
 
 (defn remove-query
