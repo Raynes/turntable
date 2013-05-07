@@ -16,89 +16,39 @@
   <script src="src/telegraph.js"></script>
 
   <script>
-    window.Telegraph = new Telegraph();
-    nv.addGraph(function() {
-      var chart = Telegraph.queryList();
-      var data = Telegraph.getQueries({url: "http://localhost:3000/queries"});
-
-      d3.select('.queries')
-        .datum(data)
-        .call(chart);
-      return chart;
+    window.Telegraph = new Telegraph({
+      server:     "telemetry-001.geni.com:3423",
+      testPath:   "stage",
+      addPath:    "add",
+      removePath: "remove",
+      groupKey:   "group",
+      queryKey:   "sql"
     });
-    
-    $(function() {
-      var ta = window.ta || {};
 
-      window.ta = ta;
+    Telegraph.listQueries('.queries');
 
-      ta.getDbs = function() {
-        var queries;
-        var dbs = [];
-        $.ajax({
-          url: 'http://localhost:3000/queries',
-          type: 'get',
-          dataType: 'json',
-          async: false,
-          success: function(data) { queries = data; }
-        });
-        $.each(queries, function(k, v) {
-          dbs.push(k);
-        });
-        return dbs;
-      };
+    $(document).ready(function() {
+      Telegraph.addGroupOpts('#group');
 
-      ta.getChronicle = function() {
-        var text = $('#chronicle').val();
-        if (text == "") return text = "{}";
-        else return text;
-      };
-
-      ta.getDb = function() {
-        return $('#dbs').find(':selected').text();
-      };
-
-      $('#stage').click(function() {
-        $.ajax({
-          url: 'http://localhost:3000/stage',
-          type: 'post',
-          data: {
-            sql: $('#addarea').val(),
-            db: ta.getDb()
-          },
-          success: function(data) {
-            $('#stagingarea').val(data);
-          }
+      $('#test').click(function(e) {
+        e.target.disabled = true;
+        Telegraph.testQuery({
+          sql: $('#query').val(),
+          group: $('#group').val()
+        }, function(d) {
+          $('#stagingarea').val(d);
+          e.target.disabled = false;
         });
       });
 
-      $('#add').click(function() {
-        var name = $('#queryname').val();
-        if (name == "") {
-          alert("You have to enter a query name!");
-          return false;
-        } else {
-          $.ajax({
-            url: 'http://localhost:3000/add',
-            type: 'post',
-            data: {
-              sql: $('#addarea').val(),
-              db: ta.getDb(),
-              period: ta.getChronicle(),
-              name: name
-            },
-            success: function(data) {
-              $('#stagingarea').val(JSON.stringify(data));
-            },
-            error: function(req, statusText, e) {
-              if (req.status == 409) alert('Query by this name already exists!');
-            }
-          });
-        };
-      });
-
-      $.each(ta.getDbs(), function(index, db) {
-        $('#dbs').append('<option value=' + db + '>' + db + '</option>');
+      $('#add').click(function(e) {
+        e.target.disabled = true;
+        Telegraph.addQuery({
+           sql: $('#query').val(),
+           group: $('#group').val(),
+           period: $('#period').val(),
+           name: $('#name').val()
+        });
       });
     });
   </script>
@@ -108,13 +58,12 @@
 <body>
   <div id="add-container">
     <form>
-      <textarea id="addarea"></textarea>
-      <select id="dbs" name="dbs">
-      </select>
-      <textarea id="chronicle" placeholder="{:minute [0 15 30 45]}"></textarea>
-      <input type="text" id="queryname" placeholder="a:query:name"></input>
+      <textarea id="query"></textarea>
+      <select id="group" name="group"></select>
+      <textarea id="period" placeholder="{:minute [0 15 30 45]}"></textarea>
+      <input type="text" id="name" placeholder="a:query:name"></input>
       <div id="buttons">
-        <button type="button" id="stage" class="button">Test</button>
+        <button type="button" id="test" class="button">Test</button>
         <button type="button" id="add" class="button">Add</button>
       </div>
     </form>
