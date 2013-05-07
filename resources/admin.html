@@ -48,6 +48,8 @@
            group: $("#group").val(),
            period: $("#period").val(),
            name: $("#name").val()
+        }, function(d) {
+           e.target.disabled = false;
         });
       });
     });
