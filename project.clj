@@ -1,4 +1,4 @@
-(defproject org.flatland/turntable "0.1.6"
+(defproject org.flatland/turntable "0.1.7"
   :description "A service for running SQL queries every n minutes."
   :url "https://github.com/flatland/turntable"
   :license {:name "Eclipse Public License"
