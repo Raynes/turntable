@@ -20,22 +20,20 @@
       server:     "telemetry-001.geni.com:3423",
       testPath:   "stage",
       addPath:    "add",
-      removePath: "remove",
-      groupKey:   "group",
-      queryKey:   "sql"
+      removePath: "remove"
     });
 
-    Telegraph.listQueries(".queries");
+    Telegraph.addTree(".queries");
 
     $(document).ready(function() {
-      Telegraph.addGroupOpts("#db");
+      Telegraph.addOpts("db", "#db");
 
       $("#test").click(function(e) {
         var $button = $(this);
         $button.attr("disabled", true);
         Telegraph.testQuery({
-          sql: $("#query").val(),
-          group: $("#db").val()
+          query: $("#query").val(),
+          db: $("#db").val()
         }, function(d) {
           $("#stagingarea").val(d);
         }, function() {
@@ -47,8 +45,8 @@
         var $button = $(this);
         $button.attr("disabled", true);
         Telegraph.addQuery({
-          sql: $("#query").val(),
-          group: $("#db").val(),
+          query: $("#query").val(),
+          db: $("#db").val(),
           period: $("#period").val(),
           name: $("#name").val()
         }, function(d) {
