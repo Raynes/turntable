@@ -22,6 +22,10 @@
       addPath:    "add",
       removePath: "remove"
     });
+    Telegraph.clickQuery = function(d) {
+      $("#name").val(d.opts.name);
+      $("#query").val(d.query);
+    };
 
     Telegraph.addTree(".queries");
 
