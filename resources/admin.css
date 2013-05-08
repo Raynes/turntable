@@ -1,19 +1,24 @@
 body {
   min-width: 1170px;
+  padding: 10px;
+}
+
+body * {
+  box-sizing: border-box;
 }
 
 #add-container {
-  width: 60%;
+  width: 49%;
   height: 300px;
   float: left;
 }
 
 #staging-container {
   float: right;
-  width: 38%;
+  width: 49%;
 }
 
-#queries {
+.queries {
   margin-top: 50px;
 }
 
@@ -35,12 +40,10 @@ body {
 
 #period {
   width: 35%;
-  margin-left: 30px;
+  margin-left: 20px;
 }
 
 #name {
   width: 60%;
-  margin-left: 30px;
+  margin-left: 20px;
 }
-
-.clear { clear: both; }
