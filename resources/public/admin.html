@@ -13,29 +13,29 @@
   <script src="http://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>
   <script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
 
-  <script src="src/telegraph.js"></script>
+  <script src="src/teleturn.js"></script>
 
   <script>
-    window.Telegraph = new Telegraph({
+    window.Teleturn = new Teleturn({
       server:     "telemetry-001.geni.com:3423",
       testPath:   "stage",
       addPath:    "add",
       removePath: "remove"
     });
-    Telegraph.clickQuery = function(d) {
+    Teleturn.clickQuery = function(d) {
       $("#name").val(d.opts.name);
       $("#query").val(d.query);
     };
 
-    Telegraph.addTree(".queries");
+    Teleturn.addTree(".queries");
 
     $(document).ready(function() {
-      Telegraph.addOpts("db", "#db");
+      Teleturn.addOpts("db", "#db");
 
       $("#test").click(function(e) {
         var $button = $(this);
         $button.attr("disabled", true);
-        Telegraph.testQuery({
+        Teleturn.testQuery({
           query: $("#query").val(),
           db: $("#db").val()
         }, function(d) {
@@ -48,7 +48,7 @@
       $("#add").click(function(e) {
         var $button = $(this);
         $button.attr("disabled", true);
-        Telegraph.addQuery({
+        Teleturn.addQuery({
           query: $("#query").val(),
           db: $("#db").val(),
           period: $("#period").val(),
