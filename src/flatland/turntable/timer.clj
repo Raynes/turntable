@@ -1,6 +1,6 @@
 (ns flatland.turntable.timer
-  (:require [flatland.chronicle :refer [times-for]]
-            [clj-time.core :as time])
+  (:require [clj-time.core :as time]
+            [flatland.chronicle :refer [times-for]])
   (:import (java.util Timer TimerTask)))
 
 ;; TODO: Use a ScheduledExecutorService?
