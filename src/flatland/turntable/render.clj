@@ -5,7 +5,8 @@
             [compojure.core :refer [GET]]
             [flatland.turntable.db :refer [get-db]]
             [flatland.useful.seq :refer [groupings]]
-            [flatland.useful.utils :refer [with-adjustments]])
+            [flatland.useful.utils :refer [with-adjustments]]
+            [lamina.query.struct :refer [parse-time-interval]])
   (:import (java.sql Timestamp)
            (java.util Date Calendar)))
 
@@ -70,18 +71,21 @@
 
 (defn render-api [config running]
   (GET "/render" {{:strs [target from limit until]} :query-params}
-    (let [targets (if (coll? target) ; if there's only one target it's a string, but if multiple are
-                    target           ; specified then compojure will make a list of them
-                    [target])
-          now-date (Date.)
-          unix-now (unix-time now-date)]
-      (with-adjustments #(when (seq %) (Long/parseLong %)) [from until]
-        (let [until (if until
-                      (absolute-time until unix-now)
-                      unix-now)
-              from (if from
-                     (absolute-time from until)
-                     (unix-time (subtract-day now-date)))]
-          (or (points config @running targets from until limit)
-              {:status 404}))))))
+       (let [targets (if (coll? target) ; if there's only one target it's a string, but if multiple are
+                       target           ; specified then compojure will make a list of them
+                       [target])
+             now-date (Date.)
+             now-ms (.getTime now-date)
+             [from until] (for [[timespec default] [[from (subtract-day now-date)]
+                                                    [until now-date]]]
+                            (unix-time
+                              (if (seq timespec)
+                                (let [diff (-> timespec
+                                               (s/replace "-" "")
+                                               (lamina.query.struct/parse-time-interval)
+                                               (long))]
+                                  (Date. (- now-ms diff)))
+                                default)))]
+         (or (points config @running targets from until limit)
+             {:status 404}))))
 
