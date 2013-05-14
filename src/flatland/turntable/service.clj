@@ -23,8 +23,9 @@
 (defn persist-queries
   "Persist all of the current queries so that they can be run again at startup."
   [config queries]
-  (spit (:query-file config) (pr-str (for [[k v] queries]
-                                       [k (dissoc v :scheduled-fn :results)]))))
+  (spit (:query-file config)
+        (pr-str (for [[k v] queries]
+                  [k (dissoc v :scheduled-fn :results)]))))
 
 (defn read-queries
   "Read all previously persisted queries."
@@ -47,19 +48,17 @@
 
 (defn add-query
   "Add a query to run at scheduled times (via the cron-like map used by schejulure)."
-  [config name db query period added-time backfill]
+  [config name db query period-edn added-time backfill]
   (when-not (contains? @running name)
-    (let [period (if (map? period)
-                   period
-                   (edn/read-string period))
-          period (if (seq period)
-                   period
-                   {})
+    (let [period-edn (if (seq period-edn)
+                       period-edn
+                       "{}")
+          period (edn/read-string period-edn) 
           query-map {:query query
+                     :period period-edn
                      :added (or added-time (java.util.Date.))
                      :name name
-                     :db db
-                     :period period}
+                     :db db}
           qfn (query-fn config query-map db)]
       (when backfill
         (.start (Thread. (fn [] (backfill-query (Long/parseLong backfill) period qfn)))))
