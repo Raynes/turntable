@@ -41,13 +41,12 @@ body * {
 }
 
 #period {
-  width: 35%;
-  margin-left: 20px;
+  width: 60%;
 }
 
 #name {
   width: 60%;
-  margin-left: 20px;
+  margin-left: 10px;
 }
 
 .table tr:first-child {

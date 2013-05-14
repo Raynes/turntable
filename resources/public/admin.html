@@ -57,6 +57,12 @@
           $button.attr("disabled", false);
         });
       });
+
+      $("#name").focus(function(e) { $(this).attr("placeholder", "query:name") });
+      $("#name").blur(function(e)  { $(this).attr("placeholder", "name")       });
+
+      $("#period").focus(function(e) { $(this).attr("placeholder", "{:minute [0 15 30 45]}") });
+      $("#period").blur(function(e)  { $(this).attr("placeholder", "run at")                 });
     });
   </script>
 
@@ -66,10 +72,9 @@
   <div id="add-container">
     <form>
       <select id="db"></select>
-      <input type="text" id="name" placeholder="a:query:name"></input>
+      <input type="text" id="name" placeholder="name"></input>
       <textarea id="query"></textarea>
-      Run at
-      <textarea id="period" placeholder="{:minute [0 15 30 45]}"></textarea>
+      <input type="text" id="period" placeholder="run at"></input>
       <div id="buttons">
         <button type="button" id="test" class="button">Test</button>
         <button type="button" id="add" class="button">Add</button>
