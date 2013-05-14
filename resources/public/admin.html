@@ -22,9 +22,11 @@
       addPath:    "add",
       removePath: "remove"
     });
+
     Teleturn.clickQuery = function(d) {
       $("#name").val(d.opts.name);
       $("#query").val(d.query);
+      $("#period").val(d.period);
     };
 
     Teleturn.addTree(".queries");
