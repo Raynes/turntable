@@ -5,7 +5,8 @@
             [clojure.stacktrace :refer [print-stack-trace]]
             [flatland.chronicle :refer [times-for]]
             [flatland.turntable.jdbc-utils :refer [prepare]]
-            [flatland.turntable.persist :refer [persist-results]])
+            [flatland.turntable.persist :refer [persist-results]]
+            [clojure.string :refer [join]])
   (:import (java.sql Timestamp)
            (org.joda.time DateTime)))
 
@@ -48,8 +49,9 @@
   "Run a query the same way turntable would run it for staging purposes."
   [config db sql]
   (try
-    (with-out-str (pprint (sql/with-connection (get-db config db)
-                            (run-query config sql (Timestamp. (System/currentTimeMillis))))))
+    (join (for [result (sql/with-connection (get-db config db)
+                         (run-query config sql (Timestamp. (System/currentTimeMillis))))]
+            (with-out-str (pprint result))))
     (catch Exception e (with-out-str (print-stack-trace e)))))
 
 (defn backfill-query [start period qfn]
