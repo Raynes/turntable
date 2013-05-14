@@ -50,10 +50,7 @@
   "Add a query to run at scheduled times (via the cron-like map used by schejulure)."
   [config name db query period-edn added-time backfill]
   (when-not (contains? @running name)
-    (let [period-edn (if (seq period-edn)
-                       period-edn
-                       "{}")
-          period (edn/read-string period-edn) 
+    (let [period (edn/read-string period-edn) 
           query-map {:query query
                      :period period-edn
                      :added (or added-time (java.util.Date.))
