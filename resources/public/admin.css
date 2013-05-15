@@ -1,96 +1,17 @@
-body {
-  min-width: 1170px;
-  padding: 10px;
-}
-
-body * {
-  box-sizing: border-box;
-}
-
-#add-container {
-  width: 49%;
-  height: 300px;
-  float: left;
-}
-
-#query {
-  width: 100%;
-  height: 248px;
-  font-family: monospace;
-}
-
-#inspect-container {
-  float: right;
-  width: 49%;
-}
-
-#inspect-results {
-  width: 100%;
-  height: 300px;
-  margin: 0px 5px 5px;
-  font-family: monospace;
-}
-
-.ellipsis {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-#inspect-query {
-  float: left;
-  width: 85%;
-  margin: 0px 5px 5px;
-  color: gray;
-  font-family: monospace;
-}
-
 #inspect-db {
   float: right;
-  height: 20px;
   color: darkgray;
   font-style: italic;
-  font-family: monospace;
-}
-
-#buttons {
-  float: right;
 }
 
 #db {
   font-family: monospace;
+  width: 23%;
+  height: auto;
+  float: left;
 }
 
 #period {
   width: 60%;
   font-family: monospace;
-}
-
-#name {
-  width: 60%;
-  margin-left: 10px;
-  font-family: monospace;
-}
-
-#query-tree {
-  margin-top: 20px;
-  float: left;
-  width: 100%;
-}
-
-.nvd3 table tbody tr:first-child {
-  display: none;
-}
-
-.nvd3 table tr td {
-  font-family: monospace;
-  padding-right: 4px;
-}
-
-.action {
-  font-family: sans-serif;
-}
-
-.btn {
-  padding: 0px 8px;
 }
