@@ -1,6 +1,6 @@
 (ns flatland.turntable.db
   (:require [clojure.java.jdbc :as sql]
-            [clj-time.core :refer [in-msecs interval now]]
+            [clj-time.core :refer [in-msecs interval now utc]]
             [clojure.pprint :refer [pprint]]
             [clojure.stacktrace :refer [print-stack-trace]]
             [flatland.chronicle :refer [times-for]]
@@ -8,7 +8,7 @@
             [flatland.turntable.persist :refer [persist-results]]
             [clojure.string :refer [join]])
   (:import (java.sql Timestamp)
-           (org.joda.time DateTime)))
+           (org.joda.time DateTime DateTimeZone)))
 
 (defn get-db
   "Given a config map and a database name, extract the db from the config."
@@ -54,7 +54,12 @@
             (with-out-str (pprint result))))
     (catch Exception e (with-out-str (print-stack-trace e)))))
 
-(defn backfill-query [start period qfn]
-  (doseq [t (times-for period (DateTime. start))
-          :while (< (.getMillis t) (.getMillis (now)))]
-    (qfn (.getMillis t))))
+(defn backfill-query
+  ([start period qfn] (backfill-query start (.getMillis (now)) period qfn))
+  ([start end period qfn]
+   (doseq [t (times-for {} (DateTime. start utc))
+           :let [end (.getMillis (DateTime. end utc))
+                 t (.getMillis t)]
+           :while (< t end)]
+     (qfn t))))
+

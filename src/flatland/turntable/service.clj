@@ -25,7 +25,7 @@
   [config queries]
   (spit (:query-file config)
         (pr-str (for [[k v] queries]
-                  [k (dissoc v :scheduled-fn :results)]))))
+                  [k (select-keys v [:query])]))))
 
 (defn read-queries
   "Read all previously persisted queries."
@@ -60,7 +60,9 @@
       (when backfill
         (.start (Thread. (fn [] (backfill-query (Long/parseLong backfill) period qfn)))))
       (swap! running update-in [name] assoc
+             :parsed-period period
              :query query-map
+             :qfn qfn
              :scheduled-fn (schedule qfn period)))))
 
 (defn remove-query
@@ -74,7 +76,7 @@
 (defn get-query
   "Fetch the currently running query."
   [name]
-  (dissoc (@running name) :scheduled-fn))
+  (select-keys (@running name) [:query]))
 
 (defn list-dbs
   "List all of the configured databases."
@@ -118,6 +120,13 @@
              {:body (list-queries)})
         (ANY "/schema" []
              {:body {:db (list-dbs config)}})
+        (ANY "/backfill" [name start end]
+             (if-let [query (@running name)]
+               (do (.start (Thread. (fn []
+                                      (let [[start end] (map #(Long/parseLong %) [start end])]
+                                        (backfill-query start end (:period query) (:qfn query))))))
+                   {:status 200})
+               {:status 404}))
         (resources "/")
         (not-found nil))
       (api)
