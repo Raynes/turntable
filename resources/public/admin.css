@@ -57,13 +57,19 @@ body * {
   float: right;
 }
 
+#db {
+  font-family: monospace;
+}
+
 #period {
   width: 60%;
+  font-family: monospace;
 }
 
 #name {
   width: 60%;
   margin-left: 10px;
+  font-family: monospace;
 }
 
 #query-tree {
