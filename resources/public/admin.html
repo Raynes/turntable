@@ -18,7 +18,7 @@
   <script>
     window.Teleturn = new Teleturn({
       server:     "telemetry-001.geni.com:3423",
-      testPath:   "stage",
+      runPath:    "stage",
       addPath:    "add",
       removePath: "remove"
     });
@@ -29,23 +29,26 @@
       $("#period").val(d.period);
     };
 
+    Teleturn.testQuery = function(opts) {
+      runQuery(opts.db, opts.query);
+    };
+
     Teleturn.addTree(".queries");
+
+    function runQuery(db, query) {
+      $("#inspect-db").html(db);
+      $("#inspect-query").html(query);
+      var $button = $("#test");
+      $button.attr("disabled", true);
+      Teleturn.runQuery({query: query, db: db}, function(d) {
+        $("#inspect-results").val(d);
+      }, function() {
+        $button.attr("disabled", false);
+      });
+    };
 
     $(document).ready(function() {
       Teleturn.addOpts("db", "#db");
-
-      $("#test").click(function(e) {
-        var $button = $(this);
-        $button.attr("disabled", true);
-        Teleturn.testQuery({
-          query: $("#query").val(),
-          db: $("#db").val()
-        }, function(d) {
-          $("#stagingarea").val(d);
-        }, function() {
-          $button.attr("disabled", false);
-        });
-      });
 
       $("#add").click(function(e) {
         var $button = $(this);
@@ -58,6 +61,10 @@
         }, function(d) {
           $button.attr("disabled", false);
         });
+      });
+
+      $("#test").click(function() {
+        runQuery($("#db").val(), $("#query").val());
       });
 
       $("#name").focus(function(e) { $(this).attr("placeholder", "query:name") });
@@ -83,8 +90,12 @@
       </div>
     </form>
   </div>
-  <div id="staging-container">
-    <textarea id="stagingarea" disabled="disabled"></textarea>
+  <div id="inspect-container">
+    <div id="inspect-identifier">
+      <span id="inspect-query"></span>
+      <span id="inspect-db"></span>
+    </div>
+    <textarea id="inspect-results" disabled="disabled"></textarea>
   </div>
   <div class="chart queries">
   </div>
