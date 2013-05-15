@@ -66,7 +66,7 @@ body * {
   margin-left: 10px;
 }
 
-.queries {
+#query-tree {
   margin-top: 20px;
   float: left;
   width: 100%;

@@ -33,7 +33,7 @@
       runQuery(opts.db, opts.query);
     };
 
-    Teleturn.addTree(".queries");
+    Teleturn.addTree("#query-tree");
 
     function runQuery(db, query) {
       $("#inspect-db").html(db);
@@ -95,6 +95,6 @@
     <div id="inspect-db"></div>
     <textarea id="inspect-results" disabled="disabled"></textarea>
   </div>
-  <div class="chart queries">
+  <div id="query-tree">
   </div>
 </body>
