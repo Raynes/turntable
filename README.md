@@ -47,15 +47,15 @@ queries, and list all queries grouped by database. Here are some examples
 using httpie.
 
 ```
-http POST http://localhost:3000/add name==aquery sql=="some sql that preferrably results in a field with a single number" db=="db.foo.com:5432/dbname" period=="{:minute [0 15 30 45]"} backfill==1234567
+http POST http://localhost:3000/add name==aquery query=="some sql that preferrably results in fields with numbers" db=="db.foo.com:5432/dbname" period=="{:minute [0 15 30 45]"} backfill==1234567
 ```
 
 `/add` requires that you give it a name for the query, sql to run, the db to
 run it on, and a [chronicle](https://github.com/flatland/chronicle) spec
-telling it at what times to run the query. If you pass `period` as `{}`, it
-runs every minute of every day of every month of every year, etc. Chronicle
-supports complex time settings like cron, so take a look at it for complex
-needs.
+telling it at what times to run the query. If you pass `period` as `{}`, or
+don't pass it at all, it runs every minute of every day of every month of every
+year, etc. Chronicle supports complex time settings like cron, so take a look at
+it for complex needs.
 
 The `backfill` argument is a feature that lets you specify a time in seconds
 since epoch and turntable will run the query from then up until now at times
@@ -84,7 +84,7 @@ This one is simple. It removes the query and stops it from running. All
 of the saved data remains in the table.
 
 ```
-http POST http://localhost:3000/stage db=="db.foo.com:5432/dbname" sql=="some sql"
+http POST http://localhost:3000/stage db=="db.foo.com:5432/dbname" query=="some sql"
 ```
 
 This is a simple way to test a query before committing to adding it, so
@@ -108,16 +108,18 @@ http http://localhost:3000/queries
 This lists all queries and returns a hash like
 
 ```json
-{
-  "db.foo.com:5432/dbname": {
-    "aquery": "some sql"
-  }
-}
+[
+    {
+        "added": "2013-05-08T18:06:54Z",
+        "db": "db.foo.com:5432/dbname"",
+        "name": "aquery",
+        "period": null,
+        "query": "some sql"
+    }
+]
 ```
 
-That's about it. There is also a WIP admin interface in `resources/` that
-is JS-based. Improvements are being made to it as a priority, so look for
-it to get more usable soon.
+That's about it. Oh, and there's an admin interface. Pretty cool stuff.
 
 ## License
 

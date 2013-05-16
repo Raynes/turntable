@@ -1,4 +1,4 @@
-(defproject org.flatland/turntable "0.1.9"
+(defproject org.flatland/turntable "0.2.0-SNAPSHOT"
   :description "A service for running SQL queries every n minutes."
   :url "https://github.com/flatland/turntable"
   :license {:name "Eclipse Public License"
@@ -15,4 +15,7 @@
                  [org.flatland/chronicle "0.1.1"]
                  [flatland/ring-cors "0.0.7"]]
   :plugins [[lein-ring "0.8.2"]]
+  :classifiers {:admin {:dependencies []
+                        :omit-source true
+                        :compile-path "target/empty"}}
   :ring {:handler flatland.turntable.server/handler})
