@@ -1,6 +1,7 @@
 (ns flatland.turntable.service
   (:require [cheshire.core :as json]
             [clojure.edn :as edn]
+            [clojure.string :as s]
             [compojure.core :refer [ANY GET POST routes]]
             [compojure.handler :refer [api]]
             [compojure.route :refer [not-found resources]]
@@ -102,6 +103,18 @@
   (doseq [[name {{:keys [db query period added]} :query}] (read-queries config)]
     (add-query config name db query period added nil)))
 
+(defn index-html [handler paths]
+  (let [paths (into {}
+                    (for [path paths]
+                      [(s/replace path #"/?$" "")
+                       (s/replace path #"/?$" "/index.html")]))]
+    (prn paths)
+    (fn [req]
+      (handler (doto (update-in req [:uri]
+                          (fn [uri]
+                            (get paths (s/replace uri #"/$" "")
+                                 uri))))))))
+
 (defn turntable-routes
   "Return API routes for turntable."
   [config]
@@ -135,7 +148,8 @@
                                         (backfill-query start end (:period query) (:qfn query))))))
                    {:status 200})
                {:status 404}))
-        (resources "/")
+        (-> (resources "/")
+            (index-html #{"/turntable"}))
         (not-found nil))
       (api)
       (wrap-cors
