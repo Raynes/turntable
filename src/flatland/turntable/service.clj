@@ -109,7 +109,7 @@
         (render-api config running)
         (POST "/add" [name db query period backfill]
               (if-let [{{:keys [query]} name :as added} (add-query config name db query period nil backfill)]
-                (do 
+                (do
                     {:body query})
                 {:status 409
                  :headers {"Content-Type" "application/json;charset=utf-8"}
