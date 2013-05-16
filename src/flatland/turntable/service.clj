@@ -12,7 +12,12 @@
             [me.raynes.fs :refer [exists?]]
             [ring.middleware.cors :refer [wrap-cors]]
             [ring.middleware.format-params :refer [wrap-json-params]]
-            [ring.middleware.format-response :refer [wrap-json-response]]))
+            [ring.middleware.format-response :refer [wrap-json-response]])
+  (:import java.util.concurrent.Executors))
+
+(defonce ^{:doc "Serialize running queries."}
+  serializing-executor
+  (Executors/newSingleThreadExecutor))
 
 (defonce ^{:doc "Queries that are currently running. It is a hash of the names associated
                 with the queries to a map containing the query, the interval between runs,
@@ -22,10 +27,12 @@
 
 (defn persist-queries
   "Persist all of the current queries so that they can be run again at startup."
-  [config queries]
-  (spit (:query-file config)
-        (pr-str (for [[k v] queries]
-                  [k (select-keys v [:query])]))))
+  [queries config]
+  (.submit serializing-executor
+           (fn []
+             (spit (:query-file config)
+                   (pr-str (for [[k v] queries]
+                             [k (select-keys v [:query])]))))))
 
 (defn read-queries
   "Read all previously persisted queries."
@@ -59,18 +66,19 @@
           qfn (query-fn config query-map db)]
       (when backfill
         (.start (Thread. (fn [] (backfill-query (Long/parseLong backfill) period qfn)))))
-      (swap! running update-in [name] assoc
-             :parsed-period period
-             :query query-map
-             :qfn qfn
-             :scheduled-fn (schedule qfn period)))))
+      (doto (swap! running update-in [name] assoc
+                   :parsed-period period
+                   :query query-map
+                   :qfn qfn
+                   :scheduled-fn (schedule qfn period))
+        (persist-queries config)))))
 
 (defn remove-query
   "Stop a scheduled query and remove its entry from @running."
   [config name]
   (if-let [scheduled (get-in @running [name :scheduled-fn])]
     (do (.cancel scheduled)
-        (persist-queries config (swap! running dissoc name))
+        (persist-queries (swap! running dissoc name) config)
         true)))
 
 (defn get-query
@@ -101,7 +109,7 @@
         (render-api config running)
         (POST "/add" [name db query period backfill]
               (if-let [{{:keys [query]} name :as added} (add-query config name db query period nil backfill)]
-                (do (persist-queries config added)
+                (do 
                     {:body query})
                 {:status 409
                  :headers {"Content-Type" "application/json;charset=utf-8"}
