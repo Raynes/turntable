@@ -17,31 +17,31 @@
   <script src="/turntable/config.js"></script>
 
   <script>
-    window.Teleturn = new Teleturn({
+    window.teleturn = new Teleturn({
       baseUrl:    turntableBaseUrl,
       runPath:    "stage",
       addPath:    "add",
       removePath: "remove"
     });
 
-    Teleturn.clickQuery = function(d) {
+    teleturn.clickQuery = function(d) {
       $("#name").val(d.opts.name);
       $("#query").val(d.query);
       $("#period").val(d.period);
     };
 
-    Teleturn.testQuery = function(opts) {
+    teleturn.testQuery = function(opts) {
       runQuery(opts.db, opts.query);
     };
 
-    Teleturn.addTree("#query-tree");
+    teleturn.addTree("#query-tree");
 
     function runQuery(db, query) {
       $("#inspect-db").html(db);
       $("#inspect-query").html(query);
       var $button = $("#test");
       $button.attr("disabled", true);
-      Teleturn.runQuery({query: query, db: db}, function(d) {
+      teleturn.runQuery({query: query, db: db}, function(d) {
         $("#inspect-results").val(d);
       }, function() {
         $button.attr("disabled", false);
@@ -49,12 +49,12 @@
     };
 
     $(document).ready(function() {
-      Teleturn.addOpts("db", "#db");
+      teleturn.addOpts("db", "#db");
 
       $("#add").click(function(e) {
         var $button = $(this);
         $button.attr("disabled", true);
-        Teleturn.addQuery({
+        teleturn.addQuery({
           query: $("#query").val(),
           db: $("#db").val(),
           period: $("#period").val(),
