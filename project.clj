@@ -15,4 +15,7 @@
                  [org.flatland/chronicle "0.1.1"]
                  [flatland/ring-cors "0.0.7"]]
   :plugins [[lein-ring "0.8.2"]]
+  :classifiers {:admin {:dependencies []
+                        :omit-source true
+                        :compile-path "target/empty"}}
   :ring {:handler flatland.turntable.server/handler})
