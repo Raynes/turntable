@@ -19,4 +19,5 @@
   :classifiers {:admin {:dependencies [[org.flatland/teleturn "0.1.2"]]
                         :omit-source true
                         :compile-path "target/empty"}}
-  :ring {:handler flatland.turntable.server/handler})
+  :ring {:handler flatland.turntable.server/handler
+         :open-browser? false})
