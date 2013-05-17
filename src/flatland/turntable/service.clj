@@ -13,7 +13,8 @@
             [me.raynes.fs :refer [exists?]]
             [ring.middleware.cors :refer [wrap-cors]]
             [ring.middleware.format-params :refer [wrap-json-params]]
-            [ring.middleware.format-response :refer [wrap-json-response]])
+            [ring.middleware.format-response :refer [wrap-json-response]]
+            [noir.util.middleware :refer [wrap-rewrites]])
   (:import java.util.concurrent.Executors))
 
 (defonce ^{:doc "Serialize running queries."}
@@ -103,18 +104,6 @@
   (doseq [[name {{:keys [db query period added]} :query}] (read-queries config)]
     (add-query config name db query period added nil)))
 
-(defn index-html [handler paths]
-  (let [paths (into {}
-                    (for [path paths]
-                      [(s/replace path #"/?$" "")
-                       (s/replace path #"/?$" "/index.html")]))]
-    (prn paths)
-    (fn [req]
-      (handler (doto (update-in req [:uri]
-                          (fn [uri]
-                            (get paths (s/replace uri #"/$" "")
-                                 uri))))))))
-
 (defn turntable-routes
   "Return API routes for turntable."
   [config]
@@ -149,7 +138,7 @@
                    {:status 200})
                {:status 404}))
         (-> (resources "/")
-            (index-html #{"/turntable"}))
+            (wrap-rewrites #"^/turntable/?$" "/turntable/index.html"))
         (not-found nil))
       (api)
       (wrap-cors
