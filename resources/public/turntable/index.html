@@ -3,8 +3,8 @@
 
 <head>
   <link rel="stylesheet" type="text/css" href="http://netdna.bootstrapcdn.com/twitter-bootstrap/2.3.1/css/bootstrap-combined.min.css">
-  <link rel="stylesheet" type="text/css" href="/teleturn/lib/nv.d3.css">
-  <link rel="stylesheet" type="text/css" href="/teleturn/teleturn.css">
+  <link rel="stylesheet" type="text/css" href="/telegraph/lib/nv.d3.css">
+  <link rel="stylesheet" type="text/css" href="/telegraph/admin.css">
   <link rel="stylesheet" type="text/css" href="/turntable/style.css">
 
   <script src="http://code.jquery.com/jquery-1.9.1.min.js"></script>
@@ -12,36 +12,36 @@
   <script src="http://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.0.0/backbone-min.js"></script>
   <script src="http://cdnjs.cloudflare.com/ajax/libs/d3/2.10.0/d3.v2.min.js"></script>
 
-  <script src="/teleturn/lib/nv.d3.js"></script>
-  <script src="/teleturn/teleturn.js"></script>
+  <script src="/telegraph/lib/nv.d3.js"></script>
+  <script src="/telegraph/admin.js"></script>
   <script src="/turntable/config.js"></script>
 
   <script>
-    window.teleturn = new Teleturn({
+    window.admin = new Admin({
       baseUrl:    turntableBaseUrl,
       runPath:    "stage",
       addPath:    "add",
       removePath: "remove"
     });
 
-    teleturn.clickQuery = function(d) {
+    admin.clickQuery = function(d) {
       $("#name").val(d.opts.name);
       $("#query").val(d.query);
       $("#period").val(d.period);
     };
 
-    teleturn.testQuery = function(opts) {
+    admin.testQuery = function(opts) {
       runQuery(opts.db, opts.query);
     };
 
-    teleturn.addTree("#query-tree");
+    admin.addTree("#query-tree");
 
     function runQuery(db, query) {
       $("#inspect-db").html(db);
       $("#inspect-query").html(query);
       var $button = $("#test");
       $button.attr("disabled", true);
-      teleturn.runQuery({query: query, db: db}, function(d) {
+      admin.runQuery({query: query, db: db}, function(d) {
         $("#inspect-results").val(d);
       }, function() {
         $button.attr("disabled", false);
@@ -49,12 +49,12 @@
     };
 
     $(document).ready(function() {
-      teleturn.addOpts("db", "#db");
+      admin.addOpts("db", "#db");
 
       $("#add").click(function(e) {
         var $button = $(this);
         $button.attr("disabled", true);
-        teleturn.addQuery({
+        admin.addQuery({
           query: $("#query").val(),
           db: $("#db").val(),
           period: $("#period").val(),

@@ -14,10 +14,11 @@
                  [postgresql/postgresql "8.4-702.jdbc4"]
                  [me.raynes/fs "1.4.0"]
                  [org.flatland/chronicle "0.1.1"]
-                 [org.flatland/teleturn "0.1.2"]]
+                 [org.flatland/telegraph "0.2.0-SNAPSHOT" :classifier "resources"]]
   :plugins [[lein-ring "0.8.2"]]
-  :classifiers {:admin {:dependencies [[org.flatland/teleturn "0.1.2"]]
-                        :omit-source true
-                        :compile-path "target/empty"}}
+  :classifiers {:admin
+                {:dependencies [[org.flatland/telegraph "0.2.0-SNAPSHOT" :classifier "resources"]]
+                 :omit-source true
+                 :compile-path "target/empty"}}
   :ring {:handler flatland.turntable.server/handler
          :open-browser? false})
