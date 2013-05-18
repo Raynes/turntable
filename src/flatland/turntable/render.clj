@@ -69,22 +69,29 @@
        :datapoints (for [datapoint datapoints]
                      ((juxt :value :timestamp) datapoint))})))
 
+(defn parse-timespec [timespec]
+  (-> timespec
+      (s/replace "-" "")
+      (lamina.query.struct/parse-time-interval)
+      (long)))
+
 (defn render-api [config running]
-  (GET "/render" {{:strs [target from limit until]} :query-params}
+  (GET "/render" {{:strs [target from limit until timeshift]} :query-params}
        (let [targets (if (coll? target) ; if there's only one target it's a string, but if multiple are
                        target           ; specified then compojure will make a list of them
                        [target])
              now-date (Date.)
              now-ms (.getTime now-date)
+             negate? (when timeshift (.startsWith timeshift "-"))
+             timeshift (when timeshift (partial (if negate? #(- %2 %) +) (parse-timespec timeshift)))
              [from until] (for [[timespec default] [[from (subtract-day now-date)]
                                                     [until now-date]]]
                             (unix-time
                               (if (seq timespec)
-                                (let [diff (-> timespec
-                                               (s/replace "-" "")
-                                               (lamina.query.struct/parse-time-interval)
-                                               (long))]
-                                  (Date. (- now-ms diff)))
+                                (let [unshifted-time (- now-ms (parse-timespec timespec))]
+                                  (Date. (if timeshift
+                                           (timeshift unshifted-time)
+                                           unshifted-time)))
                                 default)))]
          (or (points config @running targets from until limit)
              {:status 404}))))
