@@ -76,21 +76,21 @@
       (long)))
 
 (defn render-api [config running]
-  (GET "/render" {{:strs [target from limit until timeshift]} :query-params}
+  (GET "/render" {{:strs [target from limit until shift]} :query-params}
        (let [targets (if (coll? target) ; if there's only one target it's a string, but if multiple are
                        target           ; specified then compojure will make a list of them
                        [target])
              now-date (Date.)
              now-ms (.getTime now-date)
-             negate? (when timeshift (.startsWith timeshift "-"))
-             timeshift (when timeshift (partial (if negate? #(- %2 %) +) (parse-timespec timeshift)))
+             negate? (when shift (.startsWith shift "-"))
+             shift (when shift (partial (if negate? #(- %2 %) +) (parse-timespec shift)))
              [from until] (for [[timespec default] [[from (subtract-day now-date)]
                                                     [until now-date]]]
                             (unix-time
                               (if (seq timespec)
                                 (let [unshifted-time (- now-ms (parse-timespec timespec))]
-                                  (Date. (if timeshift
-                                           (timeshift unshifted-time)
+                                  (Date. (if shift
+                                           (shift unshifted-time)
                                            unshifted-time)))
                                 default)))]
          (or (points config @running targets from until limit)
