@@ -66,8 +66,8 @@
                                                       field (last segments)]
                                                   (fetch-data config running query field from until limit)))})]
       {:target (query->target target)
-       :datapoints (for [datapoint datapoints]
-                     ((juxt :value :timestamp) datapoint))})))
+       :datapoints (for [{:keys [value timestamp]} datapoints]
+                     [value (quot timestamp 1000)])})))
 
 (defn parse-timespec [timespec]
   (-> timespec
