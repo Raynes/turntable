@@ -71,29 +71,27 @@
                                 (- offset)
                                 (quot 1000))])})))
 
-(defn parse-timespec [timespec]
-  (-> timespec
-      (s/replace "-" "")
-      (lamina.query.struct/parse-time-interval)
-      (long)))
+(defn parse-interval [^String s]
+  (let [[sign s] (if (.startsWith s "-")
+                   [- (subs s 1)]
+                   [+ s])]
+    (long (sign (lamina.query.struct/parse-time-interval s)))))
 
 (defn render-api [config running]
   (GET "/render" {{:strs [target from limit until shift]} :query-params}
        (let [targets (if (coll? target) ; if there's only one target it's a string, but if multiple are
                        target           ; specified then compojure will make a list of them
                        [target])
-             now-date (Date.)
+             offset (or (and (seq shift)
+                             (parse-interval shift))
+                        0)
+             now-date (Date. (+ offset (.getTime (Date.))))
              now-ms (.getTime now-date)
-             negate? (when shift (.startsWith shift "-"))
-             shift (when shift (partial (if negate? #(- %2 %) +) (parse-timespec shift)))
              [from until] (for [[timespec default] [[from (subtract-day now-date)]
                                                     [until now-date]]]
                             (unix-time
                               (if (seq timespec)
-                                (let [unshifted-time (- now-ms (parse-timespec timespec))]
-                                  (Date. (if shift
-                                           (shift unshifted-time)
-                                           unshifted-time)))
+                                (Date. (+ now-ms (parse-interval timespec)))
                                 default)))]
-         (or (points config @running targets from until limit shift)
+         (or (points config @running targets from until limit offset)
              {:status 404}))))
