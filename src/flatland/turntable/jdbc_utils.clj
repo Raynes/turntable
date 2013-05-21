@@ -5,10 +5,13 @@
   "Prepare a query, count its args and then duplicate arg that many times for
   passing to the query. Returns a vector suitable for passing to with-query-results."
   [query arg]
-  (into [query] (repeat (-> (sql/prepare-statement (sql/connection) query)
-                            (.getParameterMetaData)
-                            (.getParameterCount))
-                        arg)))
+  (let [statement (sql/prepare-statement (sql/connection) query)
+        arg-count (-> statement
+                      (.getParameterMetaData)
+                      (.getParameterCount))]
+    (dotimes [i arg-count]
+      (.setTimestamp statement (inc i) arg))
+    [statement]))
 
 (defn table-exists?
   "Check if a table exists."
