@@ -52,7 +52,7 @@
            (Timestamp. (to-ms until))])
         (doall rows)))))
 
-(defn points [config running targets from until limit]
+(defn points [config running targets from until limit offset]
   (let [query->target (into {} (for [target targets]
                                  [(str "&" (s/replace target "/" ":"))
                                   target]))]
@@ -67,7 +67,9 @@
                                                   (fetch-data config running query field from until limit)))})]
       {:target (query->target target)
        :datapoints (for [{:keys [value timestamp]} datapoints]
-                     [value (quot timestamp 1000)])})))
+                     [value (-> timestamp
+                                (- offset)
+                                (quot 1000))])})))
 
 (defn parse-timespec [timespec]
   (-> timespec
@@ -93,6 +95,5 @@
                                            (shift unshifted-time)
                                            unshifted-time)))
                                 default)))]
-         (or (points config @running targets from until limit)
+         (or (points config @running targets from until limit shift)
              {:status 404}))))
-
