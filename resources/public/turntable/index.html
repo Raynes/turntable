@@ -42,7 +42,7 @@
       var $button = $("#test");
       $button.attr("disabled", true);
       admin.runQuery({query: query, db: db}, function(d) {
-        $("#inspect-results").val(d);
+        $("#inspect-results").text(d);
       }, function() {
         $button.attr("disabled", false);
       });
@@ -94,7 +94,7 @@
   <div id="inspect-container">
     <div id="inspect-query" class="ellipsis inspect-header"></div>
     <div id="inspect-db" class="inspect-header"></div>
-    <textarea id="inspect-results" disabled="disabled"></textarea>
+    <pre id="inspect-results"></pre>
   </div>
   <div id="query-tree">
   </div>
