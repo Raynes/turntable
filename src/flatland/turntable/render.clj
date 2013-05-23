@@ -52,6 +52,11 @@
            (Timestamp. (to-ms until))])
         (doall rows)))))
 
+(defn split-target [target]
+  (when target
+    (let [segments (s/split target #":")]
+      [(s/join ":" (butlast segments)) (last segments)])))
+
 (defn points [config running targets from until limit offset]
   (let [query->target (into {} (for [target targets]
                                  [(str "&" (s/replace target "/" ":"))
@@ -61,9 +66,7 @@
                                       (repeat nil))
                               {:payload :value :timestamp #(.getTime ^Date (:_time %))
                                :seq-generator (fn [query]
-                                                (let [segments (s/split query #":")
-                                                      query (s/join ":" (butlast segments))
-                                                      field (last segments)]
+                                                (let [[query field] (split-target query)]
                                                   (fetch-data config running query field from until limit)))})]
       {:target (query->target target)
        :datapoints (for [{:keys [value timestamp]} datapoints]
@@ -77,11 +80,21 @@
                    [+ s])]
     (long (sign (lamina.query.struct/parse-time-interval s)))))
 
+(defn add-error [points error target]
+  (conj points {:target target
+                :error error}))
+
 (defn render-api [config running]
   (GET "/render" {{:strs [target from limit until shift]} :query-params}
        (let [targets (if (coll? target) ; if there's only one target it's a string, but if multiple are
                        target           ; specified then compojure will make a list of them
                        [target])
+             [existing not-existing] (when (seq target)
+                                       ((juxt filter remove)
+                                        (comp (partial contains? @running)
+                                              first
+                                              split-target)
+                                        targets))
              offset (or (and (seq shift)
                              (parse-interval shift))
                         0)
@@ -93,5 +106,6 @@
                               (if (seq timespec)
                                 (Date. (+ now-ms (parse-interval timespec)))
                                 default)))]
-         (or (points config @running targets from until limit offset)
-             {:status 404}))))
+         (if-let [datapoints (points config @running existing from until limit offset)]
+           (reduce #(add-error % "Target does not exist." %2) datapoints not-existing)
+           []))))
