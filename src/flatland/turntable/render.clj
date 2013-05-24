@@ -41,16 +41,20 @@
   (let [q (get-in running [query :query])
         key-field (keyword field)]
     (sql/with-connection (get-db config (:db q))
-      (sql/with-query-results rows
-        (if limit
-          [(format "SELECT %s AS value, _time FROM \"%s\" LIMIT ?::int" field (:name q))
-           limit]
-          [(format "SELECT %s AS value, _time FROM \"%s\" WHERE _start >= ?::timestamp AND _start <= ?::timestamp"
-                   field
-                   (:name q))
-           (Timestamp. (to-ms from))
-           (Timestamp. (to-ms until))])
-        (doall rows)))))
+      (try
+        (sql/with-query-results rows
+          (if limit
+            [(format "SELECT %s AS value, _time FROM \"%s\" LIMIT ?::int" field (:name q))
+             limit]
+            [(format "SELECT %s AS value, _time FROM \"%s\" WHERE _start >= ?::timestamp AND _start <= ?::timestamp"
+                     field
+                     (:name q))
+             (Timestamp. (to-ms from))
+             (Timestamp. (to-ms until))])
+          (doall rows))
+        (catch org.postgresql.util.PSQLException e
+          (when-not (re-find #"does not exist" (.getMessage e))
+            (throw e)))))))
 
 (defn split-target [target]
   (when target
@@ -109,3 +113,4 @@
          (if-let [datapoints (points config @running existing from until limit offset)]
            (reduce #(add-error % "Target does not exist." %2) datapoints not-existing)
            []))))
+
