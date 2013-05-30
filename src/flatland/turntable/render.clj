@@ -6,36 +6,17 @@
             [flatland.turntable.db :refer [get-db]]
             [flatland.useful.seq :refer [groupings]]
             [flatland.useful.utils :refer [with-adjustments]]
-            [lamina.query.struct :refer [parse-time-interval]])
+            [flatland.useful.map :refer [keyed]]
+            [flatland.laminate.render :as laminate]
+            [flatland.laminate.time :as time])
   (:import (java.sql Timestamp)
            (java.util Date Calendar)))
-
-(defn absolute-time [t ref]
-  (if (neg? t)
-    (+ ref t)
-    t))
-
-(defn unix-time
-  "Number of seconds since the unix epoch, as by Linux's time() system call."
-  [^Date date]
-  (-> date (.getTime) (quot 1000)))
-
-(defn subtract-day
-  "Subtract one day from the given date and return the output of getTime."
-  [^Date d]
-  (.getTime (doto (Calendar/getInstance)
-              (.setTime d)
-              (.add Calendar/DATE -1))))
 
 (defn split-targets
   "Takes a seq of strings that look like \"query.field\" and returns a map of query
    to all the fields to be extracted from them."
   [targets]
   (groupings first second))
-
-(defn to-ms [x]
-  "Convert sections to milliseconds."
-  (* x 1000))
 
 (defn fetch-data [config running query field from until limit]
   (let [q (get-in running [query :query])
@@ -49,8 +30,8 @@
             [(format "SELECT %s AS value, _time FROM \"%s\" WHERE _start >= ?::timestamp AND _start <= ?::timestamp"
                      field
                      (:name q))
-             (Timestamp. (to-ms from))
-             (Timestamp. (to-ms until))])
+             (Timestamp. (time/s->ms from))
+             (Timestamp. (time/s->ms until))])
           (doall rows))
         (catch org.postgresql.util.PSQLException e
           (when-not (re-find #"does not exist" (.getMessage e))
@@ -61,35 +42,32 @@
     (let [segments (s/split target #":")]
       [(s/join ":" (butlast segments)) (last segments)])))
 
-(defn points [config running targets from until limit offset]
-  (let [query->target (into {} (for [target targets]
-                                 [(str "&" (s/replace target "/" ":"))
-                                  target]))]
-    (for [[target datapoints]
-          ,,(query/query-seqs (zipmap (keys query->target)
-                                      (repeat nil))
-                              {:payload :value :timestamp #(.getTime ^Date (:_time %))
-                               :seq-generator (fn [query]
-                                                (let [[query field] (split-target query)]
-                                                  (fetch-data config running query field from until limit)))})]
-      {:target (query->target target)
-       :datapoints (for [{:keys [value timestamp]} datapoints]
-                     [value (-> timestamp
-                                (- offset)
-                                (quot 1000))])})))
+(defn fetcher [config running from until limit]
+  (fn [query]
+    (let [[query field] (split-target query)]
+      (fetch-data config running query field from until limit))))
 
-(defn parse-interval [^String s]
-  (let [[sign s] (if (.startsWith s "-")
-                   [- (subs s 1)]
-                   [+ s])]
-    (long (sign (lamina.query.struct/parse-time-interval s)))))
+(defn name-munger [targets]
+  (let [transform (into {} (for [target targets]
+                             [(str "&" (s/replace target "/" ":"))
+                              target]))]
+    {:lamina->turntable transform
+     :turntable->lamina (clojure.set/map-invert transform)}))
+
+(defn render-points [config running targets from until limit offset]
+  (let [{:keys [lamina->turntable turntable->lamina]} (name-munger targets)
+        query-opts {:payload :value :timestamp #(.getTime ^Date (:_time %))
+                    :seq-generator (fetcher config running from until limit)}]
+    (for [render-result (laminate/points (map turntable->lamina targets) offset
+                                         query-opts)]
+      (update-in render-result [:target] lamina->turntable))))
 
 (defn add-error [points error target]
   (conj points {:target target
                 :error error}))
 
 (defn render-api [config running]
-  (GET "/render" {{:strs [target from limit until shift]} :query-params}
+  (GET "/render" {{:strs [target limit from until shift period align]} :query-params}
        (let [targets (if (coll? target) ; if there's only one target it's a string, but if multiple are
                        target           ; specified then compojure will make a list of them
                        [target])
@@ -99,18 +77,9 @@
                                               first
                                               split-target)
                                         targets))
-             offset (or (and (seq shift)
-                             (parse-interval shift))
-                        0)
-             now-date (Date. (+ offset (.getTime (Date.))))
-             now-ms (.getTime now-date)
-             [from until] (for [[timespec default] [[from (subtract-day now-date)]
-                                                    [until now-date]]]
-                            (unix-time
-                              (if (seq timespec)
-                                (Date. (+ now-ms (parse-interval timespec)))
-                                default)))]
-         (if-let [datapoints (points config @running existing from until limit offset)]
-           (reduce #(add-error % "Target does not exist." %2) datapoints not-existing)
-           []))))
-
+             now (System/currentTimeMillis)
+             {:keys [offset from until period]} (laminate/parse-render-opts
+                                                 (keyed [now from until shift period align]))]
+         (reduce #(add-error % "Target does not exist." %2)
+                 (render-points config @running existing from until limit offset)
+                 not-existing))))
