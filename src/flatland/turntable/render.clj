@@ -47,20 +47,11 @@
     (let [[query field] (split-target query)]
       (fetch-data config running query field from until limit))))
 
-(defn name-munger [targets]
-  (let [transform (into {} (for [target targets]
-                             [(str "&" (s/replace target "/" ":"))
-                              target]))]
-    {:lamina->turntable transform
-     :turntable->lamina (clojure.set/map-invert transform)}))
-
-(defn render-points [config running targets from until limit offset]
-  (let [{:keys [lamina->turntable turntable->lamina]} (name-munger targets)
-        query-opts {:payload :value :timestamp #(.getTime ^Date (:_time %))
-                    :seq-generator (fetcher config running from until limit)}]
-    (for [render-result (laminate/points (map turntable->lamina targets) offset
-                                         query-opts)]
-      (update-in render-result [:target] lamina->turntable))))
+(defn render-points [config running targets {:keys [from until limit period offset]}]
+  (let [query-opts (merge {:payload :value :timestamp #(.getTime ^Date (:_time %))
+                           :seq-generator (fetcher config running from until limit)}
+                          (when period {:period period}))]
+    (laminate/points targets offset query-opts)))
 
 (defn add-error [points error target]
   (conj points {:target target
@@ -68,18 +59,17 @@
 
 (defn render-api [config running]
   (GET "/render" {{:strs [target limit from until shift period align]} :query-params}
-       (let [targets (if (coll? target) ; if there's only one target it's a string, but if multiple are
-                       target           ; specified then compojure will make a list of them
-                       [target])
-             [existing not-existing] (when (seq target)
-                                       ((juxt filter remove)
-                                        (comp (partial contains? @running)
-                                              first
-                                              split-target)
-                                        targets))
-             now (System/currentTimeMillis)
-             {:keys [offset from until period]} (laminate/parse-render-opts
-                                                 (keyed [now from until shift period align]))]
-         (reduce #(add-error % "Target does not exist." %2)
-                 (render-points config @running existing from until limit offset)
-                 not-existing))))
+    (let [targets (if (coll? target) ; if there's only one target it's a string, but if multiple are
+                    target           ; specified then compojure will make a list of them
+                    [target])
+          [existing not-existing] (when (seq target)
+                                    ((juxt filter remove)
+                                     (comp (partial contains? @running)
+                                           first
+                                           split-target)
+                                     targets))
+          now (System/currentTimeMillis)
+          render-opts (laminate/parse-render-opts (keyed [now from until shift period align]))]
+      (reduce #(add-error % "Target does not exist." %2)
+              (render-points config @running existing (assoc render-opts :limit limit))
+              not-existing))))
