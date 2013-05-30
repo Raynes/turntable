@@ -10,6 +10,7 @@
                                            stage]]
             [flatland.turntable.render :refer [render-api]]
             [flatland.turntable.timer :refer [schedule]]
+            flatland.laminate ; defines stuff in lamina's query parser, not clojure functions
             [me.raynes.fs :refer [exists?]]
             [ring.middleware.cors :refer [wrap-cors]]
             [ring.middleware.format-params :refer [wrap-json-params]]

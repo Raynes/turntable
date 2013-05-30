@@ -14,6 +14,7 @@
                  [postgresql/postgresql "8.4-702.jdbc4"]
                  [me.raynes/fs "1.4.0"]
                  [org.flatland/chronicle "0.1.1"]
+                 [org.flatland/laminate "1.1.0"]
                  [org.flatland/telegraph "0.2.0" :classifier "resources"]
                  [lib-noir "0.5.5"]]
   :plugins [[lein-ring "0.8.2"]]
