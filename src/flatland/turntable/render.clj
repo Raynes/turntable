@@ -58,7 +58,7 @@
                 :error error}))
 
 (defn render-api [config running]
-  (GET "/render" {{:strs [target limit from until shift period align]} :query-params}
+  (GET "/render" {{:strs [target limit from until shift period align timezone]} :query-params}
     (let [targets (if (coll? target) ; if there's only one target it's a string, but if multiple are
                     target           ; specified then compojure will make a list of them
                     [target])
@@ -69,7 +69,7 @@
                                            split-target)
                                      targets))
           now (System/currentTimeMillis)
-          render-opts (laminate/parse-render-opts (keyed [now from until shift period align]))]
+          render-opts (laminate/parse-render-opts (keyed [now from until shift period align timezone]))]
       (reduce #(add-error % "Target does not exist." %2)
               (render-points config @running existing (assoc render-opts :limit limit))
               not-existing))))
