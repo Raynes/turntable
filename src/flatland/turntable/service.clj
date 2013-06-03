@@ -58,7 +58,7 @@
 
 (defn add-query
   "Add a query to run at scheduled times (via the cron-like map used by schejulure)."
-  [config name db query period-edn added-time backfill]
+  [config name db query period-edn added-time]
   (when-not (contains? @running name)
     (let [period (edn/read-string period-edn)
           query-map {:query query
@@ -67,8 +67,6 @@
                      :name name
                      :db db}
           qfn (query-fn config query-map db)]
-      (when backfill
-        (.start (Thread. (fn [] (backfill-query (Long/parseLong backfill) period qfn)))))
       (doto (swap! running update-in [name] assoc
                    :parsed-period period
                    :query query-map
@@ -103,15 +101,15 @@
   "Startup persisted queries."
   [config]
   (doseq [[name {{:keys [db query period added]} :query}] (read-queries config)]
-    (add-query config name db query period added nil)))
+    (add-query config name db query period added)))
 
 (defn turntable-routes
   "Return API routes for turntable."
   [config]
   (-> (routes
         (render-api config running)
-        (POST "/add" [name db query period backfill]
-              (if-let [{{:keys [query]} name :as added} (add-query config name db query period nil backfill)]
+        (POST "/add" [name db query period]
+              (if-let [{{:keys [query]} name :as added} (add-query config name db query period nil)]
                 (do
                     {:body query})
                 {:status 409
@@ -135,7 +133,7 @@
              (if-let [query (@running name)]
                (do (.start (Thread. (fn []
                                       (let [[start end] (map #(Long/parseLong %) [start end])]
-                                        (backfill-query start end (:period query) (:qfn query))))))
+                                        (backfill-query start end (:parsed-period query) (:qfn query))))))
                    {:status 200})
                {:status 404}))
         (-> (resources "/")

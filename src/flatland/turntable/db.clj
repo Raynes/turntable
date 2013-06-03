@@ -54,15 +54,10 @@
             (with-out-str (pprint result))))
     (catch Exception e (with-out-str (print-stack-trace e)))))
 
-(defn secs-to-ms [s] (quot s 1000))
-(defn ms-to-secs [ms] (* ms 1000))
-
-(defn backfill-query
-  ([start period qfn] (backfill-query (secs-to-ms start) (.getMillis (now)) period qfn))
-  ([start end period qfn]
-   (doseq [t (times-for {} (DateTime. (ms-to-secs start) utc))
-           :let [end (.getMillis (DateTime. (ms-to-secs end) utc))
-                 t (.getMillis t)]
-           :while (< t end)]
-     (qfn t))))
+(defn backfill-query [start end period qfn]
+  (doseq [t (times-for period (DateTime. start utc))
+          :let [end (.getMillis (DateTime. end utc))
+                t (.getMillis t)]
+          :while (< t end)]
+    (qfn t)))
 
