@@ -18,38 +18,28 @@
   [targets]
   (groupings first second))
 
-(defn fetch-data [config running query field from until limit]
-  (let [q (get-in running [query :query])
-        key-field (keyword field)]
+(defn fetch-data [config running query from until limit]
+  (let [q (get-in running [query :query])]
     (sql/with-connection (get-db config (:db q))
       (try
         (sql/with-query-results rows
           (if limit
-            [(format "SELECT %s AS value, _time FROM \"%s\" LIMIT ?::int" field (:name q))
+            [(format "SELECT * FROM \"%s\" LIMIT ?::int" (:name q))
              limit]
-            [(format "SELECT %s AS value, _time FROM \"%s\" WHERE _start >= ?::timestamp AND _start <= ?::timestamp"
-                     field
+            [(format "SELECT * FROM \"%s\" WHERE _start >= ?::timestamp AND _start <= ?::timestamp"
                      (:name q))
              (Timestamp. (time/s->ms from))
              (Timestamp. (time/s->ms until))])
-          (doall rows))
+          (doall (for [row rows]
+                   {:time (get row :_time)
+                    :value (dissoc row :_time :_start :_end)})))
         (catch org.postgresql.util.PSQLException e
           (when-not (re-find #"does not exist" (.getMessage e))
             (throw e)))))))
 
-(defn split-target [target]
-  (when target
-    (let [segments (s/split target #":")]
-      [(s/join ":" (butlast segments)) (last segments)])))
-
-(defn fetcher [config running from until limit]
-  (fn [query]
-    (let [[query field] (split-target query)]
-      (fetch-data config running query field from until limit))))
-
 (defn render-points [config running targets {:keys [from until limit period offset]}]
-  (let [query-opts (merge {:payload :value :timestamp #(.getTime ^Date (:_time %))
-                           :seq-generator (fetcher config running from until limit)}
+  (let [query-opts (merge {:payload :value :timestamp #(.getTime ^Date (:time %))
+                           :seq-generator #(fetch-data config running % from until limit)}
                           (when period {:period period}))]
     (laminate/points targets offset query-opts)))
 
@@ -62,14 +52,6 @@
     (let [targets (if (coll? target) ; if there's only one target it's a string, but if multiple are
                     target           ; specified then compojure will make a list of them
                     [target])
-          [existing not-existing] (when (seq target)
-                                    ((juxt filter remove)
-                                     (comp (partial contains? @running)
-                                           first
-                                           split-target)
-                                     targets))
           now (System/currentTimeMillis)
           render-opts (laminate/parse-render-opts (keyed [now from until shift period align timezone]))]
-      (reduce #(add-error % "Target does not exist." %2)
-              (render-points config @running existing (assoc render-opts :limit limit))
-              not-existing))))
+      (render-points config @running targets (assoc render-opts :limit limit)))))
