@@ -109,18 +109,18 @@
   (-> (routes
         (render-api config running)
         (POST "/add" [name db query period]
-              (if-let [{{:keys [query]} name :as added} (add-query config name db query period nil)]
-                (do
-                    {:body query})
-                {:status 409
-                 :headers {"Content-Type" "application/json;charset=utf-8"}
-                 :body (json/encode {:error "Query by this name already exists. Remove it first."})}))
+          (if-let [{{:keys [query]} name :as added} (add-query config name db query period nil)]
+            (do
+              {:body query})
+            {:status 409
+             :headers {"Content-Type" "application/json;charset=utf-8"}
+             :body (json/encode {:error "Query by this name already exists. Remove it first."})}))
         (POST "/remove" [name]
-              (if (remove-query config name)
-                {:status 204}
-                {:status 404}))
+          (if (remove-query config name)
+            {:status 204}
+            {:status 404}))
         (GET "/stage" [db query]
-             (stage config db query))
+          (stage config db query))
         (ANY "/get" [name]
              (if-let [query (get-query name)]
                {:body query}
