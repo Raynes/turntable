@@ -23,7 +23,8 @@
                                   add column _stop timestamp,
                                   add column _time timestamp,
                                   add column _elapsed integer"
-                               name)))))
+                               name)
+                       (format "create index on \"%s\" (_time)" name)))))
 
 (defn persist-results-to-db
   "Assumes a sql connection is already in place. Persists the results of the query
