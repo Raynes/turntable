@@ -40,7 +40,7 @@
 
 (defn render-points [config targets {:keys [from until limit period offset]}]
   (let [query-opts (merge {:payload :value :timestamp #(.getTime ^Date (:time %))
-                           :seq-generator #(fetch-data config % from until limit)}
+                           :seq-generator (memoize #(fetch-data config % from until limit))}
                           (when period {:period period}))]
     (laminate/points targets offset query-opts)))
 
