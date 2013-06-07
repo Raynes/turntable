@@ -22,12 +22,6 @@
   serializing-executor
   (Executors/newSingleThreadExecutor))
 
-(defonce ^{:doc "Queries that are currently running. It is a hash of the names associated
-                with the queries to a map containing the query, the interval between runs,
-                and the results from the last run."}
-  running
-  (atom {}))
-
 (defn persist-queries
   "Persist all of the current queries so that they can be run again at startup."
   [queries config]
@@ -47,7 +41,7 @@
 (defn persist-results-to-atom
   "Returns a function tresults to the @running atom."
   [config query results]
-  (swap! running update-in [(:name query) :results] conj results)
+  (swap! (:running config) update-in [(:name query) :results] conj results)
   results)
 
 (defn persist-results
@@ -59,33 +53,35 @@
 (defn add-query
   "Add a query to run at scheduled times (via the cron-like map used by schejulure)."
   [config name db query period-edn added-time]
-  (when-not (contains? @running name)
-    (let [period (edn/read-string period-edn)
-          query-map {:query query
-                     :period period-edn
-                     :added (or added-time (java.util.Date.))
-                     :name name
-                     :db db}
-          qfn (query-fn config query-map db)]
-      (doto (swap! running update-in [name] assoc
-                   :parsed-period period
-                   :query query-map
-                   :qfn qfn
-                   :scheduled-fn (schedule qfn period))
-        (persist-queries config)))))
+  (let [running (:running config)]
+    (when-not (contains? @running name)
+      (let [period (edn/read-string period-edn)
+            query-map {:query query
+                       :period period-edn
+                       :added (or added-time (java.util.Date.))
+                       :name name
+                       :db db}
+            qfn (query-fn config query-map db)]
+        (doto (swap! running update-in [name] assoc
+                     :parsed-period period
+                     :query query-map
+                     :qfn qfn
+                     :scheduled-fn (schedule qfn period))
+          (persist-queries config))))))
 
 (defn remove-query
   "Stop a scheduled query and remove its entry from @running."
   [config name]
-  (if-let [scheduled (get-in @running [name :scheduled-fn])]
-    (do (.cancel scheduled)
-        (persist-queries (swap! running dissoc name) config)
-        true)))
+  (let [running (:running config)]
+    (if-let [scheduled (get-in @running [name :scheduled-fn])]
+      (do (.cancel scheduled)
+          (persist-queries (swap! running dissoc name) config)
+          true))))
 
 (defn get-query
   "Fetch the currently running query."
-  [name]
-  (select-keys (@running name) [:query]))
+  [config name]
+  (select-keys (@(:running config) name) [:query]))
 
 (defn list-dbs
   "List all of the configured databases."
@@ -94,8 +90,8 @@
 
 (defn list-queries
   "List all of the queries."
-  []
-  (map :query (vals @running)))
+  [config]
+  (map :query (vals @(:running config))))
 
 (defn init-saved-queries
   "Startup persisted queries."
@@ -103,11 +99,14 @@
   (doseq [[name {{:keys [db query period added]} :query}] (read-queries config)]
     (add-query config name db query period added)))
 
+(defn init-config [config]
+  (assoc config :running (atom {})))
+
 (defn turntable-routes
   "Return API routes for turntable."
   [config]
   (-> (routes
-        (render-api config running)
+        (render-api config)
         (POST "/add" [name db query period]
           (if-let [{{:keys [query]} name :as added} (add-query config name db query period nil)]
             (do
@@ -122,15 +121,15 @@
         (GET "/stage" [db query]
           (stage config db query))
         (ANY "/get" [name]
-             (if-let [query (get-query name)]
+             (if-let [query (get-query config name)]
                {:body query}
                {:status 404}))
         (ANY "/queries" []
-             {:body (list-queries)})
+             {:body (list-queries config)})
         (ANY "/schema" []
              {:body {:db (list-dbs config)}})
         (ANY "/backfill" [name start end]
-             (if-let [query (@running name)]
+             (if-let [query (@(:running config) name)]
                (do (.start (Thread. (fn []
                                       (let [[start end] (map #(Long/parseLong %) [start end])]
                                         (backfill-query start end (:parsed-period query) (:qfn query))))))

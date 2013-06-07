@@ -18,8 +18,9 @@
   [targets]
   (groupings first second))
 
-(defn fetch-data [config running query from until limit]
-  (let [q (get-in running [query :query])]
+(defn fetch-data [config query from until limit]
+  (let [running @(:running config)
+        q (get-in running [query :query])]
     (sql/with-connection (get-db config (:db q))
       (try
         (sql/with-query-results rows
@@ -37,9 +38,9 @@
           (when-not (re-find #"does not exist" (.getMessage e))
             (throw e)))))))
 
-(defn render-points [config running targets {:keys [from until limit period offset]}]
+(defn render-points [config targets {:keys [from until limit period offset]}]
   (let [query-opts (merge {:payload :value :timestamp #(.getTime ^Date (:time %))
-                           :seq-generator #(fetch-data config running % from until limit)}
+                           :seq-generator #(fetch-data config % from until limit)}
                           (when period {:period period}))]
     (laminate/points targets offset query-opts)))
 
@@ -47,11 +48,11 @@
   (conj points {:target target
                 :error error}))
 
-(defn render-api [config running]
+(defn render-api [config]
   (GET "/render" {{:strs [target limit from until shift period align timezone]} :query-params}
     (let [targets (if (coll? target) ; if there's only one target it's a string, but if multiple are
                     target           ; specified then compojure will make a list of them
                     [target])
           now (System/currentTimeMillis)
           render-opts (laminate/parse-render-opts (keyed [now from until shift period align timezone]))]
-      (render-points config @running targets (assoc render-opts :limit limit)))))
+      (render-points config targets (assoc render-opts :limit limit)))))
