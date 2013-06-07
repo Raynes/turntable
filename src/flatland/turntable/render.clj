@@ -27,7 +27,7 @@
           (if limit
             [(format "SELECT * FROM \"%s\" LIMIT ?::int" (:name q))
              limit]
-            [(format "SELECT * FROM \"%s\" WHERE _start >= ?::timestamp AND _start <= ?::timestamp"
+            [(format "SELECT * FROM \"%s\" WHERE _time >= ?::timestamp AND _time <= ?::timestamp"
                      (:name q))
              (Timestamp. (time/s->ms from))
              (Timestamp. (time/s->ms until))])
