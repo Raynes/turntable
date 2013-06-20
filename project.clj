@@ -15,12 +15,8 @@
                  [me.raynes/fs "1.4.0"]
                  [org.flatland/chronicle "0.1.1"]
                  [org.flatland/laminate "1.3.0-SNAPSHOT"]
-                 [org.flatland/telegraph "0.2.0" :classifier "resources"]
+                 [org.flatland/turntable-ui "0.2.5-SNAPSHOT"]
                  [lib-noir "0.5.5"]]
   :plugins [[lein-ring "0.8.2"]]
-  :classifiers {:admin
-                {:dependencies [[org.flatland/telegraph "0.2.0" :classifier "resources"]]
-                 :omit-source true
-                 :compile-path "target/empty"}}
   :ring {:handler flatland.turntable.server/handler
          :open-browser? false})
