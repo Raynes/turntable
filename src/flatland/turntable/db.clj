@@ -34,8 +34,8 @@
       (try
         (sql/with-connection (get-db config db)
           (let [start (now)
-                time (Timestamp. time)
-                results (run-query config query time)
+                ts (Timestamp. time)
+                results (run-query config query ts)
                 stop (now)]
             (persist-results config query-map
                              {:results results

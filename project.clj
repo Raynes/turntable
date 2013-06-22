@@ -16,7 +16,8 @@
                  [org.flatland/chronicle "0.1.1"]
                  [org.flatland/laminate "1.3.0-SNAPSHOT"]
                  [org.flatland/telegraph "0.2.0" :classifier "resources"]
-                 [lib-noir "0.5.5"]]
+                 [lib-noir "0.5.5"]
+                 [org.flatland/telemetry-client "0.1.0"]]
   :plugins [[lein-ring "0.8.2"]]
   :classifiers {:admin
                 {:dependencies [[org.flatland/telegraph "0.2.0" :classifier "resources"]]
