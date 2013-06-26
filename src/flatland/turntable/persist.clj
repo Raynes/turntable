@@ -1,6 +1,5 @@
 (ns flatland.turntable.persist
   (:require [clojure.java.jdbc :as sql]
-            [flatland.telemetry.client :as tc]
             [flatland.turntable.jdbc-utils :refer [prepare table-exists?]])
   (:import (java.sql Timestamp)))
 
@@ -43,8 +42,10 @@
 (defn persist-results-to-telemetry
   "Expects a :telemetry key in config which will be a telemetry client connection."
   [config query results]
-  (let [{:keys [results time]} results]
-    (tc/log (:telemetry config) (:name query) {:time (quot time 1000) :values results})))
+  (let [{:keys [results time]} results
+        {:keys [telemetry]} config
+        log (:send telemetry)]
+    (log (str "turntable:" (:name query)) {:time (quot time 1000) :values results})))
 
 (defn persist-results
   "Persist results with the functions in the config's :persist-fns."
