@@ -1,5 +1,5 @@
 (ns flatland.turntable.timer
-  (:require [clj-time.core :as time]
+  (:require [clj-time.local :as ltime]
             [flatland.chronicle :refer [times-for]])
   (:import (java.util Timer TimerTask)))
 
@@ -25,7 +25,7 @@
 (defn schedule
   "Schedule a task to run at the times specified by the chronicle map."
   [f spec]
-  (let [[start & rest] (rest (times-for spec (time/now)))
+  (let [[start & rest] (rest (times-for spec (ltime/local-now)))
         timer (Timer.)]
     (doto timer
       (.schedule (sequential-scheduler timer f rest) (.toDate start)))))
