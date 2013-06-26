@@ -15,13 +15,10 @@
                  [me.raynes/fs "1.4.0"]
                  [org.flatland/chronicle "0.1.1"]
                  [org.flatland/laminate "1.3.1"]
-                 [org.flatland/telegraph "0.2.0" :classifier "resources"]
-                 [lib-noir "0.5.5"]
-                 [org.flatland/telemetry-client "0.2.0"]]
+                 [org.flatland/turntable-ui "0.2.5-SNAPSHOT"]
+                 [org.flatland/telemetry-client "0.2.0"]
+                 [lib-noir "0.5.5"]]
+>>>>>>> cca879dd3e565d2cc6a27eac617b95d619ad9289
   :plugins [[lein-ring "0.8.2"]]
-  :classifiers {:admin
-                {:dependencies [[org.flatland/telegraph "0.2.0" :classifier "resources"]]
-                 :omit-source true
-                 :compile-path "target/empty"}}
   :ring {:handler flatland.turntable.server/handler
          :open-browser? false})
