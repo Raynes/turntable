@@ -1,4 +1,4 @@
-(defproject org.flatland/turntable "0.2.5-SNAPSHOT"
+(defproject org.flatland/turntable "0.2.5-beta1"
   :description "A service for running SQL queries every n minutes."
   :url "https://github.com/flatland/turntable"
   :license {:name "Eclipse Public License"
@@ -15,7 +15,7 @@
                  [me.raynes/fs "1.4.0"]
                  [org.flatland/chronicle "0.2.1"]
                  [org.flatland/laminate "1.3.1"]
-                 [org.flatland/turntable-ui "0.2.5-SNAPSHOT"]
+                 [org.flatland/turntable-ui "0.2.5-beta1"]
                  [org.flatland/telemetry-client "0.2.0"]
                  [lib-noir "0.5.5"]]
   :plugins [[lein-ring "0.8.2"]]
