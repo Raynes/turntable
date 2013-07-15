@@ -8,9 +8,7 @@
             [flatland.turntable.db :refer [backfill-query
                                            query-fn
                                            stage]]
-            [flatland.turntable.render :refer [render-api]]
             [flatland.turntable.timer :refer [schedule]]
-            flatland.laminate ; defines stuff in lamina's query parser, not clojure functions
             [me.raynes.fs :refer [exists?]]
             [ring.middleware.cors :refer [wrap-cors]]
             [ring.middleware.format-params :refer [wrap-json-params]]
@@ -106,7 +104,6 @@
   "Return API routes for turntable."
   [config]
   (-> (routes
-        (render-api config)
         (POST "/add" [name db query period]
           (if-let [{{:keys [query]} name :as added} (add-query config name db query period nil)]
             (do

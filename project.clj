@@ -1,4 +1,4 @@
-(defproject org.flatland/turntable "0.2.5-beta1"
+(defproject org.flatland/turntable "0.3.0"
   :description "A service for running SQL queries every n minutes."
   :url "https://github.com/flatland/turntable"
   :license {:name "Eclipse Public License"
@@ -9,12 +9,10 @@
                  [cheshire "5.0.1"]
                  [ring-middleware-format "0.2.4"]
                  [flatland/ring-cors "0.0.7"]
-                 [lamina "0.5.0-SNAPSHOT"]
                  [org.clojure/java.jdbc "0.2.3"]
                  [postgresql/postgresql "8.4-702.jdbc4"]
                  [me.raynes/fs "1.4.0"]
                  [org.flatland/chronicle "0.2.1"]
-                 [org.flatland/laminate "1.3.1"]
                  [org.flatland/turntable-ui "0.2.5-beta1"]
                  [org.flatland/telemetry-client "0.2.0"]
                  [lib-noir "0.5.5"]]
