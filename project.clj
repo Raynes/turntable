@@ -15,7 +15,7 @@
                  [org.flatland/useful "0.10.1"]
                  [org.flatland/chronicle "0.2.1"]
                  [org.flatland/turntable-ui "0.3.1"]
-                 [org.flatland/telemetry-client "0.2.0"]]
+                 [org.flatland/telemetry-client "0.2.1"]]
   :plugins [[lein-ring "0.8.2"]]
   :ring {:handler flatland.turntable.server/handler
          :open-browser? false})
