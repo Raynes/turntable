@@ -29,8 +29,9 @@
    and updates running with the results and times when finished."
   ([config {:keys [query name] :as query-map} db]
    (fn qfn
-     ([] (qfn (System/currentTimeMillis)))
-     ([time]
+     ([] (qfn (System/currentTimeMillis) false))
+     ([time] (qfn (System/currentTimeMillis) false))
+     ([time replay?]
       (try
         (sql/with-connection (get-db config db)
           (let [start (now)
@@ -42,7 +43,8 @@
                               :start start
                               :stop stop
                               :time time
-                              :elapsed (in-msecs (interval start stop))})))
+                              :elapsed (in-msecs (interval start stop))}
+                             replay?)))
         (catch Exception e (.printStackTrace e)))))))
 
 (defn stage
@@ -59,5 +61,5 @@
           :let [end (.getMillis (DateTime. end utc))
                 t (.getMillis t)]
           :while (< t end)]
-    (qfn t)))
+    (qfn t true)))
 
