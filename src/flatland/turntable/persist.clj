@@ -13,7 +13,7 @@
   (let [{:keys [results time]} results
         {:keys [telemetry]} config
         log (:send telemetry)]
-    (log (str "turntable:" (:name query)) {:time (quot time 1000) :values results})))
+    (log (str "turntable:" (:name query)) {:time (quot time 1000) :rows results})))
 
 (defn persist-results
   "Persist results with the functions in the config's :persist-fns."
